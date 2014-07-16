@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <CL/opencl.h>
+#include <OpenCL/opencl.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 
