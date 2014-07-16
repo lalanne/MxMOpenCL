@@ -147,30 +147,44 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
-  int status;
 
-  // Create Program Objects
-  //
-  
-  // Load binary from disk
-  unsigned char *kernelbinary;
-  char *xclbin=argv[1];
-  printf("loading %s\n", xclbin);
-  int n_i = load_file_to_memory(xclbin, (char **) &kernelbinary);
-  if (n_i < 0) {
-    printf("failed to load kernel from xclbin: %s\n", xclbin);
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
-  size_t n = n_i;
-  // Create the compute program from offline
-  program = clCreateProgramWithBinary(context, 1, &device_id, &n,
-                                      (const unsigned char **) &kernelbinary, &status, &err);
-  if ((!program) || (err!=CL_SUCCESS)) {
-    printf("Error: Failed to create compute program from binary %d!\n", err);
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
+/*********************************LOADING KERNEL FROM BINARY OR SOURCE********************************/
+    int status;
+    if(fpga){
+        unsigned char *kernelbinary;
+        char *xclbin=argv[1];
+        printf("loading binary [%s]\n", xclbin);
+        int n_i = load_file_to_memory(xclbin, (char **) &kernelbinary);
+        if (n_i < 0) {
+            printf("failed to load kernel from xclbin: %s\n", xclbin);
+            printf("Test failed\n");
+            return EXIT_FAILURE;
+        }
+        size_t n = n_i;
+        program = clCreateProgramWithBinary(context, 1, &device_id, &n,
+                                          (const unsigned char **) &kernelbinary, &status, &err);
+    }
+    else{
+        unsigned char *kernelsrc;
+        char *clsrc = argv[1];
+        printf("loading source [%s]\n", clsrc);
+        int n_i = load_file_to_memory(clsrc, (char **) &kernelsrc);
+        if (n_i < 0) {
+            printf("failed to load kernel from source: %s\n", clsrc);
+            printf("Test failed\n");
+            return EXIT_FAILURE;
+        }
+
+        program = clCreateProgramWithSource(context, 1, (const char **) &kernelsrc, NULL, &err);
+    }
+
+
+    if ((!program) || (err!=CL_SUCCESS)) {
+        printf("Error: Failed to create compute program from binary %d!\n", err);
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
+/********************************************************************************************************/
 
   // Build the program executable
   //
