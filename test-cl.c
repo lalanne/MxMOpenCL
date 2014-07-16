@@ -261,21 +261,28 @@ int main(int argc, char** argv)
   //
 
 #ifdef C_KERNEL
-  err = clEnqueueTask(commands, kernel, 0, NULL, NULL);
+    err = clEnqueueTask(commands, kernel, 0, NULL, NULL);
 #else
-  global[0] = MATRIX_RANK;
-  global[1] = MATRIX_RANK;
-  local[0] = MATRIX_RANK;
-  local[1] = MATRIX_RANK;
-  err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, 
-                               (size_t*)&global, /*(size_t*)&local*/NULL, 0, NULL, NULL);
+    global[0] = MATRIX_RANK;
+    global[1] = MATRIX_RANK;
+    local[0] = MATRIX_RANK;
+    local[1] = MATRIX_RANK;
+
+    err = clEnqueueNDRangeKernel(commands, 
+                                kernel, 
+                                2, 
+                                NULL, 
+                                (size_t*)&global, 
+                                /*(size_t*)&local*/NULL, 
+                                0, 
+                                NULL, 
+                                NULL);
 #endif
-  if (err)
-  {
-    printf("Error: Failed to execute kernel! %d\n", err);
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
+    if (err){
+        printf("Error: Failed to execute kernel! %d\n", err);
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
 
   // Read back the results from the device to verify the output
   //
