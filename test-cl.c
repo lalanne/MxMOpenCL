@@ -268,7 +268,7 @@ int main(int argc, char** argv)
   local[0] = MATRIX_RANK;
   local[1] = MATRIX_RANK;
   err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, 
-                               (size_t*)&global, (size_t*)&local, 0, NULL, NULL);
+                               (size_t*)&global, /*(size_t*)&local*/NULL, 0, NULL, NULL);
 #endif
   if (err)
   {

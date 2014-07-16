@@ -1,5 +1,5 @@
 
-__kernel __attribute__ ((reqd_work_group_size(16, 16, 1)))
+__kernel //__attribute__ ((reqd_work_group_size(16, 16, 1)))
 void mmult(__global int* a, __global int* b, __global int* output)
 {
   int r = get_global_id(0);
