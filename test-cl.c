@@ -20,7 +20,44 @@
 #define MATRIX_RANK 512
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 
+const unsigned int SUCCESS = 0;
+
 ////////////////////////////////////////////////////////////////////////////////
+
+
+int show_info(cl_platform_id platform_id){
+    int err;
+    char cl_platform_vendor[1001];
+    char cl_platform_name[1001];
+    char cl_platform_version[1001];
+
+    err = clGetPlatformInfo(platform_id,CL_PLATFORM_VENDOR,1000,(void *)cl_platform_vendor,NULL);
+    if (err != CL_SUCCESS){
+        printf("Error: clGetPlatformInfo(CL_PLATFORM_VENDOR) failed!\n");
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
+    printf("CL_PLATFORM_VENDOR %s\n",cl_platform_vendor);
+  
+    err = clGetPlatformInfo(platform_id,CL_PLATFORM_NAME,1000,(void *)cl_platform_name,NULL);
+    if (err != CL_SUCCESS){
+        printf("Error: clGetPlatformInfo(CL_PLATFORM_NAME) failed!\n");
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
+    printf("CL_PLATFORM_NAME %s\n",cl_platform_name);
+    
+    err = clGetPlatformInfo(platform_id,CL_PLATFORM_VERSION,1000,(void *)cl_platform_version,NULL);
+    if (err != CL_SUCCESS){
+        printf("Error: clGetPlatformInfo(CL_PLATFORM_VERSION) failed!\n");
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
+    printf("CL_PLATFORM_VERSION %s\n",cl_platform_version);
+
+    return SUCCESS;
+}
+
 
 int
 load_file_to_memory(const char *filename, char **result)
@@ -66,9 +103,6 @@ int main(int argc, char** argv)
   cl_program program;                 // compute program
   cl_kernel kernel;                   // compute kernel
    
-  char cl_platform_vendor[1001];
-  char cl_platform_name[1001];
-  char cl_platform_version[1001];
    
   cl_mem input_a;                     // device memory used for the input array
   cl_mem input_b;                     // device memory used for the input array
@@ -111,30 +145,12 @@ int main(int argc, char** argv)
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
-  err = clGetPlatformInfo(platform_id,CL_PLATFORM_VENDOR,1000,(void *)cl_platform_vendor,NULL);
-  if (err != CL_SUCCESS)
-  {
-    printf("Error: clGetPlatformInfo(CL_PLATFORM_VENDOR) failed!\n");
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
-  printf("CL_PLATFORM_VENDOR %s\n",cl_platform_vendor);
-  err = clGetPlatformInfo(platform_id,CL_PLATFORM_NAME,1000,(void *)cl_platform_name,NULL);
-  if (err != CL_SUCCESS)
-  {
-    printf("Error: clGetPlatformInfo(CL_PLATFORM_NAME) failed!\n");
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
-  printf("CL_PLATFORM_NAME %s\n",cl_platform_name);
-  err = clGetPlatformInfo(platform_id,CL_PLATFORM_VERSION,1000,(void *)cl_platform_version,NULL);
-  if (err != CL_SUCCESS)
-  {
-    printf("Error: clGetPlatformInfo(CL_PLATFORM_VERSION) failed!\n");
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
-  printf("CL_PLATFORM_VERSION %s\n",cl_platform_version);
+
+    if(show_info(platform_id) != SUCCESS){
+        printf("Error: Showing information!\n");
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
 
  
   // Connect to a compute device
