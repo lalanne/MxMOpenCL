@@ -68,6 +68,7 @@ int main(int argc, char** argv)
    
   char cl_platform_vendor[1001];
   char cl_platform_name[1001];
+  char cl_platform_version[1001];
    
   cl_mem input_a;                     // device memory used for the input array
   cl_mem input_b;                     // device memory used for the input array
@@ -126,6 +127,15 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
   printf("CL_PLATFORM_NAME %s\n",cl_platform_name);
+  err = clGetPlatformInfo(platform_id,CL_PLATFORM_VERSION,1000,(void *)cl_platform_version,NULL);
+  if (err != CL_SUCCESS)
+  {
+    printf("Error: clGetPlatformInfo(CL_PLATFORM_VERSION) failed!\n");
+    printf("Test failed\n");
+    return EXIT_FAILURE;
+  }
+  printf("CL_PLATFORM_VERSION %s\n",cl_platform_version);
+
  
   // Connect to a compute device
   //
