@@ -1,4 +1,6 @@
 
+#include <time.h>
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +17,7 @@
 
 // Use a static matrix for simplicity
 //
-#define MATRIX_RANK 2048
+#define MATRIX_RANK 512
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,19 +73,33 @@ int main(int argc, char** argv)
   cl_mem input_b;                     // device memory used for the input array
   cl_mem output;                      // device memory used for the output array
    
-  if (argc != 2){
-    printf("%s <inputfile>\n", argv[0]);
-    return EXIT_FAILURE;
-  }
+    if (argc != 2){
+        printf("%s <inputfile>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
 
-  // Fill our data sets with pattern
-  //
-  int i = 0;
-  for(i = 0; i < DATA_SIZE; i++) {
-    a[i] = (int)i;
-    b[i] = (int)i;
-    results[i] = 0;
-  }
+    clock_t init_data_begin, init_data_end;                                                                                                                    
+    double init_data_time;
+
+    init_data_begin = clock();
+    // Fill our data sets with pattern
+    //
+    int i = 0;
+    for(i = 0; i < DATA_SIZE; i++) {
+        a[i] = (int)i;
+        b[i] = (int)i;
+        results[i] = 0;
+    }
+
+    init_data_end = clock();                                                                                                                                            
+    init_data_time = (double)(init_data_end - init_data_begin) / CLOCKS_PER_SEC;                       
+    printf("\ninit data time [ms]: [%f]\n", init_data_time*1000);
+
+
+    clock_t prelude_begin, prelude_end; 
+    double prelude_time;
+
+    prelude_begin = clock();
 
   // Connect to first platform
   //
@@ -147,8 +163,17 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+    prelude_end = clock();                                                                                                                                            
+    prelude_time = (double)(prelude_end - prelude_begin) / CLOCKS_PER_SEC;                       
+    printf("\nprelude time [ms]: [%f]\n", prelude_time*1000);
+    
 
 /*********************************LOADING KERNEL FROM BINARY OR SOURCE********************************/
+    clock_t load_begin, load_end; 
+    double load_time;
+
+    load_begin = clock();
+
     int status;
     if(fpga){
         unsigned char *kernelbinary;
@@ -184,6 +209,8 @@ int main(int argc, char** argv)
         printf("Test failed\n");
         return EXIT_FAILURE;
     }
+
+
 /********************************************************************************************************/
 
   // Build the program executable
@@ -222,7 +249,16 @@ int main(int argc, char** argv)
     printf("Test failed\n");
     return EXIT_FAILURE;
   }    
-    
+
+    load_end = clock();                                                                                                                                            
+    load_time = (double)(load_end - load_begin) / CLOCKS_PER_SEC;                       
+    printf("\nload time [ms]: [%f]\n", load_time*1000);
+
+
+    clock_t transfer_begin, transfer_end; 
+    double transfer_time;
+    transfer_begin = clock();
+
   // Write our data set into the input array in device memory 
   //
   err = clEnqueueWriteBuffer(commands, input_a, CL_TRUE, 0, sizeof(int) * DATA_SIZE, a, 0, NULL, NULL);
@@ -242,6 +278,15 @@ int main(int argc, char** argv)
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
+
+    transfer_end = clock();                                                                                                                                            
+    transfer_time = (double)(transfer_end - transfer_begin) / CLOCKS_PER_SEC;                       
+    printf("\ntransfer time [ms]: [%f]\n", transfer_time*1000);
+
+    cl_event event;
+    clock_t kernel_begin, kernel_end;                                                                                                                    
+    double kernel_time;                                                                                                                     
+    kernel_begin = clock();  
     
   // Set the arguments to our compute kernel
   //
@@ -265,6 +310,7 @@ int main(int argc, char** argv)
     local[0] = MATRIX_RANK;
     local[1] = MATRIX_RANK;
 
+
     err = clEnqueueNDRangeKernel(commands, 
                                 kernel, 
                                 2, 
@@ -273,12 +319,31 @@ int main(int argc, char** argv)
                                 /*(size_t*)&local*/NULL, 
                                 0, 
                                 NULL, 
-                                NULL);
+                                &event);
     if (err){
         printf("Error: Failed to execute kernel! %d\n", err);
         printf("Test failed\n");
         return EXIT_FAILURE;
     }
+    clWaitForEvents(1, &event);
+
+    kernel_end = clock();                                                                                                                                            
+    kernel_time = (double)(kernel_end - kernel_begin) / CLOCKS_PER_SEC;                                                                                   
+    printf("\nkernel time [ms]: [%f]\n", kernel_time*1000);
+
+    cl_ulong time_start;
+    cl_ulong time_end;
+    double total_time;
+
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
+    total_time = time_end - time_start;
+    printf("\nExecution time in milliseconds = %f ms\n", (total_time / 1000000.0) );
+
+
+    clock_t transfer_back_begin, transfer_back_end;                                                                                                                    
+    double transfer_back_time;                                                                                                                     
+    transfer_back_begin = clock();  
 
   // Read back the results from the device to verify the output
   //
@@ -292,6 +357,15 @@ int main(int argc, char** argv)
   }
 
   clWaitForEvents(1, &readevent);
+
+    transfer_back_end = clock();
+    transfer_back_time = (double)(transfer_back_end - transfer_back_begin) / CLOCKS_PER_SEC;
+    printf("\ntransfer_back time [ms]: [%f]\n", transfer_back_time*1000);
+
+    clock_t test_begin, test_end;  
+    double test_time;                                                                                                                     
+    test_begin = clock();  
+    
     
   // Validate our results
   //
@@ -317,6 +391,11 @@ int main(int argc, char** argv)
   // Print a brief summary detailing the results
   //
   printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
+
+    test_end = clock();
+    test_time = (double)(test_end - test_begin) / CLOCKS_PER_SEC;
+    printf("\ntest time [ms]: [%f]\n", test_time*1000);
+
     
   // Shutdown and cleanup
   //
