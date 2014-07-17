@@ -260,9 +260,6 @@ int main(int argc, char** argv)
   // using the maximum number of work group items for this device
   //
 
-#ifdef C_KERNEL
-    err = clEnqueueTask(commands, kernel, 0, NULL, NULL);
-#else
     global[0] = MATRIX_RANK;
     global[1] = MATRIX_RANK;
     local[0] = MATRIX_RANK;
@@ -277,7 +274,6 @@ int main(int argc, char** argv)
                                 0, 
                                 NULL, 
                                 NULL);
-#endif
     if (err){
         printf("Error: Failed to execute kernel! %d\n", err);
         printf("Test failed\n");
