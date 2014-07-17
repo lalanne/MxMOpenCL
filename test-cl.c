@@ -15,7 +15,7 @@
 
 // Use a static matrix for simplicity
 //
-#define MATRIX_RANK 16
+#define MATRIX_RANK 2048
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -297,25 +297,6 @@ int main(int argc, char** argv)
 
   clWaitForEvents(1, &readevent);
     
-  printf("A\n");
-  for (i=0;i<DATA_SIZE;i++) {
-    printf("%x ",a[i]);
-    if (((i+1) % 16) == 0)
-      printf("\n");
-  }
-  printf("B\n");
-  for (i=0;i<DATA_SIZE;i++) {
-    printf("%x ",b[i]);
-    if (((i+1) % 16) == 0)
-      printf("\n");
-  }
-  printf("res\n");
-  for (i=0;i<DATA_SIZE;i++) {
-    printf("%x ",results[i]);
-    if (((i+1) % 16) == 0)
-      printf("\n");
-  }
-    
   // Validate our results
   //
   correct = 0;
@@ -336,14 +317,6 @@ int main(int argc, char** argv)
   for (i = 0;i < DATA_SIZE; i++) 
     if(results[i] == sw_results[i])
       correct++;
-  printf("Software\n");
-  for (i=0;i<DATA_SIZE;i++) {
-    //printf("%0.2f ",sw_results[i]);
-    printf("%d ",sw_results[i]);
-    if (((i+1) % 16) == 0)
-      printf("\n");
-  }
-    
     
   // Print a brief summary detailing the results
   //
