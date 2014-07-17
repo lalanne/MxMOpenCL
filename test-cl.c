@@ -13,100 +13,36 @@
 #include <sys/stat.h>
 #include <OpenCL/opencl.h>
 
-////////////////////////////////////////////////////////////////////////////////
-
-// Use a static matrix for simplicity
-//
 #define MATRIX_RANK 512
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
-
 const unsigned int SUCCESS = 0;
 
-////////////////////////////////////////////////////////////////////////////////
+int show_info(cl_platform_id platform_id);
+int load_file_to_memory(const char *filename, char **result);
 
-
-int show_info(cl_platform_id platform_id){
-    int err;
-    char cl_platform_vendor[1001];
-    char cl_platform_name[1001];
-    char cl_platform_version[1001];
-
-    err = clGetPlatformInfo(platform_id,CL_PLATFORM_VENDOR,1000,(void *)cl_platform_vendor,NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: clGetPlatformInfo(CL_PLATFORM_VENDOR) failed!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-    printf("CL_PLATFORM_VENDOR %s\n",cl_platform_vendor);
-  
-    err = clGetPlatformInfo(platform_id,CL_PLATFORM_NAME,1000,(void *)cl_platform_name,NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: clGetPlatformInfo(CL_PLATFORM_NAME) failed!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-    printf("CL_PLATFORM_NAME %s\n",cl_platform_name);
-    
-    err = clGetPlatformInfo(platform_id,CL_PLATFORM_VERSION,1000,(void *)cl_platform_version,NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: clGetPlatformInfo(CL_PLATFORM_VERSION) failed!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-    printf("CL_PLATFORM_VERSION %s\n",cl_platform_version);
-
-    return SUCCESS;
-}
-
-
-int
-load_file_to_memory(const char *filename, char **result)
-{ 
-  int size = 0;
-  FILE *f = fopen(filename, "rb");
-  if (f == NULL) 
-  { 
-    *result = NULL;
-    return -1; // -1 means file opening fail 
-  } 
-  fseek(f, 0, SEEK_END);
-  size = ftell(f);
-  fseek(f, 0, SEEK_SET);
-  *result = (char *)malloc(size+1);
-  if (size != fread(*result, sizeof(char), size, f)) 
-  { 
-    free(*result);
-    return -2; // -2 means file reading fail 
-  } 
-  fclose(f);
-  (*result)[size] = 0;
-  return size;
-}
-
-int main(int argc, char** argv)
-{
-  int err;                            // error code returned from api calls
+int main(int argc, char** argv){
+    int err;                            // error code returned from api calls
      
-  int a[DATA_SIZE];                   // original data set given to device
-  int b[DATA_SIZE];                   // original data set given to device
-  int results[DATA_SIZE];             // results returned from device
-  int sw_results[DATA_SIZE];          // results returned from device
-  unsigned int correct;               // number of correct results returned
+    int a[DATA_SIZE];                   // original data set given to device
+    int b[DATA_SIZE];                   // original data set given to device
+    int results[DATA_SIZE];             // results returned from device
+    int sw_results[DATA_SIZE];          // results returned from device
+    unsigned int correct;               // number of correct results returned
 
-  size_t global[2];                   // global domain size for our calculation
-  size_t local[2];                    // local domain size for our calculation
+    size_t global[2];                   // global domain size for our calculation
+    size_t local[2];                    // local domain size for our calculation
 
-  cl_platform_id platform_id;         // platform id
-  cl_device_id device_id;             // compute device id 
-  cl_context context;                 // compute context
-  cl_command_queue commands;          // compute command queue
-  cl_program program;                 // compute program
-  cl_kernel kernel;                   // compute kernel
+    cl_platform_id platform_id;         // platform id
+    cl_device_id device_id;             // compute device id 
+    cl_context context;                 // compute context
+    cl_command_queue commands;          // compute command queue
+    cl_program program;                 // compute program
+    cl_kernel kernel;                   // compute kernel
    
    
-  cl_mem input_a;                     // device memory used for the input array
-  cl_mem input_b;                     // device memory used for the input array
-  cl_mem output;                      // device memory used for the output array
+    cl_mem input_a;                     // device memory used for the input array
+    cl_mem input_b;                     // device memory used for the input array
+    cl_mem output;                      // device memory used for the output array
    
     if (argc != 2){
         printf("%s <inputfile>\n", argv[0]);
@@ -442,3 +378,60 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 }
+
+int show_info(cl_platform_id platform_id){
+    int err;
+    char cl_platform_vendor[1001];
+    char cl_platform_name[1001];
+    char cl_platform_version[1001];
+
+    err = clGetPlatformInfo(platform_id,CL_PLATFORM_VENDOR,1000,(void *)cl_platform_vendor,NULL);
+    if (err != CL_SUCCESS){
+        printf("Error: clGetPlatformInfo(CL_PLATFORM_VENDOR) failed!\n");
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
+    printf("CL_PLATFORM_VENDOR %s\n",cl_platform_vendor);
+  
+    err = clGetPlatformInfo(platform_id,CL_PLATFORM_NAME,1000,(void *)cl_platform_name,NULL);
+    if (err != CL_SUCCESS){
+        printf("Error: clGetPlatformInfo(CL_PLATFORM_NAME) failed!\n");
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
+    printf("CL_PLATFORM_NAME %s\n",cl_platform_name);
+    
+    err = clGetPlatformInfo(platform_id,CL_PLATFORM_VERSION,1000,(void *)cl_platform_version,NULL);
+    if (err != CL_SUCCESS){
+        printf("Error: clGetPlatformInfo(CL_PLATFORM_VERSION) failed!\n");
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
+    printf("CL_PLATFORM_VERSION %s\n",cl_platform_version);
+
+    return SUCCESS;
+}
+
+int load_file_to_memory(const char *filename, char **result)
+{ 
+  int size = 0;
+  FILE *f = fopen(filename, "rb");
+  if (f == NULL) 
+  { 
+    *result = NULL;
+    return -1; // -1 means file opening fail 
+  } 
+  fseek(f, 0, SEEK_END);
+  size = ftell(f);
+  fseek(f, 0, SEEK_SET);
+  *result = (char *)malloc(size+1);
+  if (size != fread(*result, sizeof(char), size, f)) 
+  { 
+    free(*result);
+    return -2; // -2 means file reading fail 
+  } 
+  fclose(f);
+  (*result)[size] = 0;
+  return size;
+}
+
