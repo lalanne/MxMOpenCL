@@ -152,21 +152,21 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
- 
-  // Connect to a compute device
-  //
-  int fpga = 0;
+    int fpga = 0;
 #if defined (FPGA_DEVICE)
-  fpga = 1;
+    fpga = 1;
 #endif
-  err = clGetDeviceIDs(platform_id, fpga ? CL_DEVICE_TYPE_ACCELERATOR : CL_DEVICE_TYPE_CPU,
-                       1, &device_id, NULL);
-  if (err != CL_SUCCESS)
-  {
-    printf("Error: Failed to create a device group!\n");
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
+
+    err = clGetDeviceIDs(platform_id, 
+                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : CL_DEVICE_TYPE_CPU,
+                        1, 
+                        &device_id, 
+                        NULL);
+    if (err != CL_SUCCESS){
+        printf("Error: Failed to create a device group!\n");
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
   
   // Create a compute context 
   //
