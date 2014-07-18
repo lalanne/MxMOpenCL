@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <OpenCL/opencl.h>
 
-#define MATRIX_RANK 512
+#define MATRIX_RANK 2048
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
@@ -116,7 +116,7 @@ int main(int argc, char** argv){
 
   // Create a command commands
   //
-  commands = clCreateCommandQueue(context, device_id, 0, &err);
+  commands = clCreateCommandQueue(context, device_id, CL_QUEUE_PROFILING_ENABLE, &err);
   if (!commands)
   {
     printf("Error: Failed to create a command commands!\n");
@@ -246,9 +246,6 @@ int main(int argc, char** argv){
     printf("\ntransfer time [ms]: [%f]\n", transfer_time*1000);
 
     cl_event event;
-    clock_t kernel_begin, kernel_end;                                                                                                                    
-    double kernel_time;                                                                                                                     
-    kernel_begin = clock();  
     
   // Set the arguments to our compute kernel
   //
@@ -271,6 +268,9 @@ int main(int argc, char** argv){
     global[1] = MATRIX_RANK;
     local[0] = MATRIX_RANK;
     local[1] = MATRIX_RANK;
+    clock_t kernel_begin, kernel_end;                                                                                                                    
+    double kernel_time;                                                                                                                     
+    kernel_begin = clock();  
 
 
     err = clEnqueueNDRangeKernel(commands, 
@@ -300,7 +300,7 @@ int main(int argc, char** argv){
     clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
     clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
     total_time = time_end - time_start;
-    printf("\nExecution time in milliseconds = %f ms\n", (total_time / 1000000.0) );
+    printf("\nPure kernel Execution time in milliseconds = %0.3f ms\n", (total_time / 1000000.0) );
 
 
     clock_t transfer_back_begin, transfer_back_end;                                                                                                                    
