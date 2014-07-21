@@ -11,7 +11,12 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <OpenCL/opencl.h>
+
+#ifdef __APPLE__
+    #include <OpenCL/opencl.h>
+#elif __linux
+    #include <CL/cl.h>
+#endif
 
 #define MATRIX_RANK 2048
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
