@@ -18,7 +18,7 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 2048
+#define MATRIX_RANK 1024
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
@@ -99,7 +99,7 @@ int main(int argc, char** argv){
 #endif
 
     err = clGetDeviceIDs(platform_id, 
-                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : CL_DEVICE_TYPE_CPU,
+                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : CL_DEVICE_TYPE_GPU/*CL_DEVICE_TYPE_CPU*//*CL_DEVICE_TYPE_ACCELERATOR*/,
                         1, 
                         &device_id, 
                         NULL);
@@ -108,6 +108,16 @@ int main(int argc, char** argv){
         printf("Test failed\n");
         return EXIT_FAILURE;
     }
+
+    cl_char string[10240] = {0};
+    // Get device name
+    err = clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(string), &string, NULL);
+    if (err != CL_SUCCESS)
+    {   
+        printf("Error: could not get device information\n");
+        return EXIT_FAILURE;
+    }   
+    printf("Name of device: %s\n", string);
   
   // Create a compute context 
   //
@@ -354,6 +364,7 @@ int main(int argc, char** argv){
   for (i = 0;i < DATA_SIZE; i++) 
     if(results[i] == sw_results[i])
       correct++;
+
     
   // Print a brief summary detailing the results
   //
