@@ -99,7 +99,7 @@ int main(int argc, char** argv){
 #endif
 
     err = clGetDeviceIDs(platform_id, 
-                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : CL_DEVICE_TYPE_GPU/*CL_DEVICE_TYPE_CPU*//*CL_DEVICE_TYPE_ACCELERATOR*/,
+                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : /*CL_DEVICE_TYPE_GPU*//*CL_DEVICE_TYPE_CPU*/CL_DEVICE_TYPE_ACCELERATOR,
                         1, 
                         &device_id, 
                         NULL);
@@ -207,7 +207,7 @@ int main(int argc, char** argv){
 
   // Create the compute kernel in the program we wish to run
   //
-  kernel = clCreateKernel(program, "mmult", &err);
+  kernel = clCreateKernel(program, "naive", &err);
   if (!kernel || err != CL_SUCCESS)
   {
     printf("Error: Failed to create compute kernel!\n");
