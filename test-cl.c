@@ -227,7 +227,7 @@ int main(int argc, char** argv){
     return EXIT_FAILURE;
   }    
 
-    load_end = clock();                                                                                                                                            
+    load_end = clock();
     load_time = (double)(load_end - load_begin) / CLOCKS_PER_SEC;                       
     printf("\nload time [ms]: [%f]\n", load_time*1000);
 
@@ -256,7 +256,7 @@ int main(int argc, char** argv){
     return EXIT_FAILURE;
   }
 
-    transfer_end = clock();                                                                                                                                            
+    transfer_end = clock();
     transfer_time = (double)(transfer_end - transfer_begin) / CLOCKS_PER_SEC;                       
     printf("\ntransfer time [ms]: [%f]\n", transfer_time*1000);
 
@@ -283,7 +283,7 @@ int main(int argc, char** argv){
     global[1] = MATRIX_RANK;
     local[0] = MATRIX_RANK;
     local[1] = MATRIX_RANK;
-    clock_t kernel_begin, kernel_end;                                                                                                                    
+    clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
     kernel_begin = clock();  
 
@@ -304,8 +304,8 @@ int main(int argc, char** argv){
     }
     clWaitForEvents(1, &event);
 
-    kernel_end = clock();                                                                                                                                            
-    kernel_time = (double)(kernel_end - kernel_begin) / CLOCKS_PER_SEC;                                                                                   
+    kernel_end = clock();
+    kernel_time = (double)(kernel_end - kernel_begin) / CLOCKS_PER_SEC;
     printf("\nkernel time [ms]: [%f]\n", kernel_time*1000);
 
     cl_ulong time_start;
@@ -318,7 +318,7 @@ int main(int argc, char** argv){
     printf("\nPure kernel Execution time in milliseconds = %0.3f ms\n", (total_time / 1000000.0) );
 
 
-    clock_t transfer_back_begin, transfer_back_end;                                                                                                                    
+    clock_t transfer_back_begin, transfer_back_end;
     double transfer_back_time;                                                                                                                     
     transfer_back_begin = clock();  
 
