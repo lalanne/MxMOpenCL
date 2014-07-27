@@ -207,7 +207,7 @@ int main(int argc, char** argv){
 
   // Create the compute kernel in the program we wish to run
   //
-  kernel = clCreateKernel(program, "naive", &err);
+  kernel = clCreateKernel(program, "more_work", &err);
   if (!kernel || err != CL_SUCCESS)
   {
     printf("Error: Failed to create compute kernel!\n");
