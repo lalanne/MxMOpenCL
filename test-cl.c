@@ -34,8 +34,6 @@ int main(int argc, char** argv){
     int sw_results[DATA_SIZE];          // results returned from device
     unsigned int correct;               // number of correct results returned
 
-    size_t global[2];                   // global domain size for our calculation
-    size_t local[2];                    // local domain size for our calculation
 
     cl_platform_id platform_id;         // platform id
     cl_device_id device_id;             // compute device id 
@@ -278,11 +276,9 @@ int main(int argc, char** argv){
   // Execute the kernel over the entire range of our 1d input data set
   // using the maximum number of work group items for this device
   //
+    const size_t global = MATRIX_RANK;// global domain size for our calculation
+    const size_t local = MATRIX_RANK;// local domain size for our calculation
 
-    global[0] = MATRIX_RANK;
-    global[1] = MATRIX_RANK;
-    local[0] = MATRIX_RANK;
-    local[1] = MATRIX_RANK;
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
     kernel_begin = clock();  
@@ -290,10 +286,10 @@ int main(int argc, char** argv){
 
     err = clEnqueueNDRangeKernel(commands, 
                                 kernel, 
-                                2, 
+                                1, 
                                 NULL, 
-                                (size_t*)&global, 
-                                /*(size_t*)&local*/NULL, 
+                                &global, 
+                                /*&local*/NULL, 
                                 0, 
                                 NULL, 
                                 &event);
