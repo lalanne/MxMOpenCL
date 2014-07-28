@@ -6,7 +6,7 @@ void private_memory(__global int* a, __global int* b, __global int* output)
     int c, index, running;
     int rank = get_global_size(0);
 
-    int A_private[1024];
+    int A_private[4096];
 
     for(index = 0; index < rank; index++){
         A_private[index] = a[r*rank + index];
