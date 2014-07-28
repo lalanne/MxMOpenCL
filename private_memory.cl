@@ -6,10 +6,16 @@ void private_memory(__global int* a, __global int* b, __global int* output)
     int c, index, running;
     int rank = get_global_size(0);
 
+    int A_private[1024];
+
+    for(index = 0; index < rank; index++){
+        A_private[index] = a[r*rank + index];
+    }
+
     for (c=0; c < rank; c++) {
         running  = 0;
         for(index = 0; index <  rank; index++)
-            running +=  a[r*rank+index] * b[index*rank+c];
+            running +=  A_private[index] * b[index*rank+c];
         output[r*rank + c] = running;
     }
 
