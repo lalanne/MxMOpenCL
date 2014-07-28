@@ -18,7 +18,7 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 1024
+#define MATRIX_RANK 4096
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
@@ -277,7 +277,7 @@ int main(int argc, char** argv){
   // using the maximum number of work group items for this device
   //
     const size_t global = MATRIX_RANK;// global domain size for our calculation
-    const size_t local = MATRIX_RANK;// local domain size for our calculation
+    const size_t local = 16; //MATRIX_RANK;// local domain size for our calculation
 
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
@@ -289,7 +289,7 @@ int main(int argc, char** argv){
                                 1, 
                                 NULL, 
                                 &global, 
-                                /*&local*/NULL, 
+                                &local, 
                                 0, 
                                 NULL, 
                                 &event);
@@ -342,6 +342,7 @@ int main(int argc, char** argv){
     
   // Validate our results
   //
+  /*
   correct = 0;
   for(i = 0; i < DATA_SIZE; i++)
   {
@@ -360,7 +361,7 @@ int main(int argc, char** argv){
   for (i = 0;i < DATA_SIZE; i++) 
     if(results[i] == sw_results[i])
       correct++;
-
+*/
     
   // Print a brief summary detailing the results
   //
