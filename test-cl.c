@@ -266,6 +266,7 @@ int main(int argc, char** argv){
   err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input_a);
   err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &input_b);
   err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &output);
+  err |= clSetKernelArg(kernel, 3, sizeof(int)*MATRIX_RANK, NULL);
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to set kernel arguments! %d\n", err);
@@ -277,7 +278,7 @@ int main(int argc, char** argv){
   // using the maximum number of work group items for this device
   //
     const size_t global = MATRIX_RANK;// global domain size for our calculation
-    const size_t local = 16; //MATRIX_RANK;// local domain size for our calculation
+    const size_t local = 8; //MATRIX_RANK;// local domain size for our calculation
 
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
@@ -342,8 +343,8 @@ int main(int argc, char** argv){
     
   // Validate our results
   //
-  /*
-  correct = 0;
+ 
+  /*correct = 0;
   for(i = 0; i < DATA_SIZE; i++)
   {
     int row = i/MATRIX_RANK;
