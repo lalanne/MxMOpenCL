@@ -67,7 +67,7 @@ int main(int argc, char** argv){
         results[i] = 0;
     }
 
-    init_data_end = clock();                                                                                                                                            
+    init_data_end = clock();
     init_data_time = (double)(init_data_end - init_data_begin) / CLOCKS_PER_SEC;                       
     printf("\ninit data time [ms]: [%f]\n", init_data_time*1000);
 
