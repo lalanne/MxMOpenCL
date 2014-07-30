@@ -293,7 +293,7 @@ int main(int argc, char** argv){
                                 2, 
                                 NULL, 
                                 (size_t*)&global, 
-                                /*(size_t*)&local*/NULL, 
+                                (size_t*)&local, 
                                 0, 
                                 NULL, 
                                 &event);
