@@ -18,7 +18,7 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 1024
+#define MATRIX_RANK 4096
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
@@ -28,10 +28,10 @@ int load_file_to_memory(const char *filename, char **result);
 int main(int argc, char** argv){
     int err;                            // error code returned from api calls
      
-    int a[DATA_SIZE];                   // original data set given to device
-    int b[DATA_SIZE];                   // original data set given to device
-    int results[DATA_SIZE];             // results returned from device
-    int sw_results[DATA_SIZE];          // results returned from device
+    double a[DATA_SIZE];                   // original data set given to device
+    double b[DATA_SIZE];                   // original data set given to device
+    double results[DATA_SIZE];             // results returned from device
+    double sw_results[DATA_SIZE];          // results returned from device
     unsigned int correct;               // number of correct results returned
 
     size_t global[2];                   // global domain size for our calculation
@@ -62,9 +62,9 @@ int main(int argc, char** argv){
     //
     int i = 0;
     for(i = 0; i < DATA_SIZE; i++) {
-        a[i] = (int)i;
-        b[i] = (int)i;
-        results[i] = 0;
+        a[i] = (double)i;
+        b[i] = (double)i;
+        results[i] = 0.0f;
     }
 
     init_data_end = clock();
@@ -217,9 +217,9 @@ int main(int argc, char** argv){
 
   // Create the input and output arrays in device memory for our calculation
   //
-  input_a = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(int) * DATA_SIZE, NULL, NULL);
-  input_b = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(int) * DATA_SIZE, NULL, NULL);
-  output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(int) * DATA_SIZE, NULL, NULL);
+  input_a = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(double) * DATA_SIZE, NULL, NULL);
+  input_b = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(double) * DATA_SIZE, NULL, NULL);
+  output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(double) * DATA_SIZE, NULL, NULL);
   if (!input_a || !input_b || !output)
   {
     printf("Error: Failed to allocate device memory!\n");
@@ -238,7 +238,7 @@ int main(int argc, char** argv){
 
   // Write our data set into the input array in device memory 
   //
-  err = clEnqueueWriteBuffer(commands, input_a, CL_TRUE, 0, sizeof(int) * DATA_SIZE, a, 0, NULL, NULL);
+  err = clEnqueueWriteBuffer(commands, input_a, CL_TRUE, 0, sizeof(double) * DATA_SIZE, a, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to write to source array a!\n");
@@ -248,7 +248,7 @@ int main(int argc, char** argv){
 
   // Write our data set into the input array in device memory 
   //
-  err = clEnqueueWriteBuffer(commands, input_b, CL_TRUE, 0, sizeof(int) * DATA_SIZE, b, 0, NULL, NULL);
+  err = clEnqueueWriteBuffer(commands, input_b, CL_TRUE, 0, sizeof(double) * DATA_SIZE, b, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to write to source array b!\n");
@@ -281,8 +281,8 @@ int main(int argc, char** argv){
 
     global[0] = MATRIX_RANK;
     global[1] = MATRIX_RANK;
-    local[0] = MATRIX_RANK;
-    local[1] = MATRIX_RANK;
+    local[0] = 1;//MATRIX_RANK;
+    local[1] = 1;//MATRIX_RANK;
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
     kernel_begin = clock();  
@@ -325,7 +325,7 @@ int main(int argc, char** argv){
   // Read back the results from the device to verify the output
   //
   cl_event readevent;
-  err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(int) * DATA_SIZE, results, 0, NULL, &readevent );  
+  err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * DATA_SIZE, results, 0, NULL, &readevent );  
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to read output array! %d\n", err);
@@ -346,12 +346,13 @@ int main(int argc, char** argv){
     
   // Validate our results
   //
+  /*
   correct = 0;
   for(i = 0; i < DATA_SIZE; i++)
   {
     int row = i/MATRIX_RANK;
     int col = i%MATRIX_RANK;
-    int running = 0;
+    double running = 0.0f;
     int index;
     for (index=0;index<MATRIX_RANK;index++) {
       int aIndex = row*MATRIX_RANK + index;
@@ -360,12 +361,22 @@ int main(int argc, char** argv){
     }
     sw_results[i] = running;
   }
-    
-  for (i = 0;i < DATA_SIZE; i++) 
-    if(results[i] == sw_results[i])
+  
+  double error = 0.0;
+  for (i = 0;i < DATA_SIZE; i++) {
+    error = results[i] - sw_results[i];
+    if(error < 1E-32){
       correct++;
-
-    
+    }
+  }
+     printf("Software\n");
+   for (i=0;i<DATA_SIZE;i++) {
+     //printf("%0.2f ",sw_results[i]);
+  //   printf("%f ",sw_results[i]);
+     //if (((i+1) % 16) == 0)
+    //   printf("\n");
+   }
+    */
   // Print a brief summary detailing the results
   //
   printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
