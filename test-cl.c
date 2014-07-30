@@ -18,7 +18,7 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 1024
+#define MATRIX_RANK 4096
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
@@ -52,7 +52,7 @@ int main(int argc, char** argv){
         return EXIT_FAILURE;
     }
 
-    clock_t init_data_begin, init_data_end;                                                                                                                    
+    clock_t init_data_begin, init_data_end; 
     double init_data_time;
 
     init_data_begin = clock();
