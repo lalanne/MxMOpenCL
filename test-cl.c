@@ -54,8 +54,8 @@ int main(int argc, char** argv){
         return EXIT_FAILURE;
     }
 
-    const unsigned int local_size = atoi(argv[2]);
-    printf("local size[%u]\n", local_size);
+    const unsigned int wgSize = atoi(argv[2]);
+    printf("Working Group size[%u] kernel[%s] \n", wgSize, argv[1]);
 
     clock_t init_data_begin, init_data_end;
     double init_data_time;
@@ -282,7 +282,7 @@ int main(int argc, char** argv){
   // using the maximum number of work group items for this device
   //
     const size_t global = MATRIX_RANK;// global domain size for our calculation
-    const size_t local = 16; //MATRIX_RANK;// local domain size for our calculation
+    const size_t local = wgSize; //MATRIX_RANK;// local domain size for our calculation
 
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
@@ -294,7 +294,7 @@ int main(int argc, char** argv){
                                 1, 
                                 NULL, 
                                 &global, 
-                                /*&local*/NULL, 
+                                &local, 
                                 0, 
                                 NULL, 
                                 &event);
