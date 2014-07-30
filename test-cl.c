@@ -49,10 +49,13 @@ int main(int argc, char** argv){
     cl_mem input_b;                     // device memory used for the input array
     cl_mem output;                      // device memory used for the output array
    
-    if (argc != 2){
+    if (argc != 3){
         printf("%s <inputfile>\n", argv[0]);
         return EXIT_FAILURE;
     }
+
+    const unsigned int local_size = atoi(argv[2]);
+    printf("local size[%u]\n", local_size);
 
     clock_t init_data_begin, init_data_end;
     double init_data_time;
@@ -67,7 +70,7 @@ int main(int argc, char** argv){
         results[i] = 0.0f;
     }
 
-    init_data_end = clock();                                                                                                                                            
+    init_data_end = clock();
     init_data_time = (double)(init_data_end - init_data_begin) / CLOCKS_PER_SEC;                       
     printf("\ninit data time [ms]: [%f]\n", init_data_time*1000);
 
