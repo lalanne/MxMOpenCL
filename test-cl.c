@@ -18,21 +18,23 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 4096
+#define MATRIX_RANK 1024
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
 int show_info(cl_platform_id platform_id);
 int load_file_to_memory(const char *filename, char **result);
+unsigned int test_results(const double* const a, 
+                        const double* const b,
+                        const double* const results);
+
 
 int main(int argc, char** argv){
     int err;                            // error code returned from api calls
      
-    int a[DATA_SIZE];                   // original data set given to device
-    int b[DATA_SIZE];                   // original data set given to device
-    int results[DATA_SIZE];             // results returned from device
-    int sw_results[DATA_SIZE];          // results returned from device
-    unsigned int correct;               // number of correct results returned
+    double a[DATA_SIZE];                   // original data set given to device
+    double b[DATA_SIZE];                   // original data set given to device
+    double results[DATA_SIZE];             // results returned from device
 
 
     cl_platform_id platform_id;         // platform id
@@ -60,9 +62,9 @@ int main(int argc, char** argv){
     //
     int i = 0;
     for(i = 0; i < DATA_SIZE; i++) {
-        a[i] = (int)i;
-        b[i] = (int)i;
-        results[i] = 0;
+        a[i] = (double)i;
+        b[i] = (double)i;
+        results[i] = 0.0f;
     }
 
     init_data_end = clock();                                                                                                                                            
@@ -215,9 +217,9 @@ int main(int argc, char** argv){
 
   // Create the input and output arrays in device memory for our calculation
   //
-  input_a = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(int) * DATA_SIZE, NULL, NULL);
-  input_b = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(int) * DATA_SIZE, NULL, NULL);
-  output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(int) * DATA_SIZE, NULL, NULL);
+  input_a = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(double) * DATA_SIZE, NULL, NULL);
+  input_b = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(double) * DATA_SIZE, NULL, NULL);
+  output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(double) * DATA_SIZE, NULL, NULL);
   if (!input_a || !input_b || !output)
   {
     printf("Error: Failed to allocate device memory!\n");
@@ -236,7 +238,7 @@ int main(int argc, char** argv){
 
   // Write our data set into the input array in device memory 
   //
-  err = clEnqueueWriteBuffer(commands, input_a, CL_TRUE, 0, sizeof(int) * DATA_SIZE, a, 0, NULL, NULL);
+  err = clEnqueueWriteBuffer(commands, input_a, CL_TRUE, 0, sizeof(double) * DATA_SIZE, a, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to write to source array a!\n");
@@ -246,7 +248,7 @@ int main(int argc, char** argv){
 
   // Write our data set into the input array in device memory 
   //
-  err = clEnqueueWriteBuffer(commands, input_b, CL_TRUE, 0, sizeof(int) * DATA_SIZE, b, 0, NULL, NULL);
+  err = clEnqueueWriteBuffer(commands, input_b, CL_TRUE, 0, sizeof(double) * DATA_SIZE, b, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to write to source array b!\n");
@@ -289,7 +291,7 @@ int main(int argc, char** argv){
                                 1, 
                                 NULL, 
                                 &global, 
-                                &local, 
+                                /*&local*/NULL, 
                                 0, 
                                 NULL, 
                                 &event);
@@ -321,7 +323,7 @@ int main(int argc, char** argv){
   // Read back the results from the device to verify the output
   //
   cl_event readevent;
-  err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(int) * DATA_SIZE, results, 0, NULL, &readevent );  
+  err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * DATA_SIZE, results, 0, NULL, &readevent );  
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to read output array! %d\n", err);
@@ -339,57 +341,62 @@ int main(int argc, char** argv){
     double test_time;                                                                                                                     
     test_begin = clock();  
     
-    
-  // Validate our results
-  //
-  /*
-  correct = 0;
-  for(i = 0; i < DATA_SIZE; i++)
-  {
-    int row = i/MATRIX_RANK;
-    int col = i%MATRIX_RANK;
-    int running = 0;
-    int index;
-    for (index=0;index<MATRIX_RANK;index++) {
-      int aIndex = row*MATRIX_RANK + index;
-      int bIndex = col + index*MATRIX_RANK;
-      running += a[aIndex] * b[bIndex];
-    }
-    sw_results[i] = running;
-  }
-    
-  for (i = 0;i < DATA_SIZE; i++) 
-    if(results[i] == sw_results[i])
-      correct++;
-*/
-    
-  // Print a brief summary detailing the results
-  //
-  printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
+    const unsigned int correctElements = test_results(a,
+                                                    b,
+                                                    results);    
 
     test_end = clock();
     test_time = (double)(test_end - test_begin) / CLOCKS_PER_SEC;
     printf("\ntest time [ms]: [%f]\n", test_time*1000);
 
     
-  // Shutdown and cleanup
-  //
-  clReleaseMemObject(input_a);
-  clReleaseMemObject(input_b);
-  clReleaseMemObject(output);
-  clReleaseProgram(program);
-  clReleaseKernel(kernel);
-  clReleaseCommandQueue(commands);
-  clReleaseContext(context);
+    clReleaseMemObject(input_a);
+    clReleaseMemObject(input_b);
+    clReleaseMemObject(output);
+    clReleaseProgram(program);
+    clReleaseKernel(kernel);
+    clReleaseCommandQueue(commands);
+    clReleaseContext(context);
 
-  if(correct == DATA_SIZE){
-    printf("Test passed!\n");
-    return EXIT_SUCCESS;
-  }
-  else{
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
+    if(correctElements == DATA_SIZE){
+        printf("Test passed!\n");
+        return EXIT_SUCCESS;
+    }
+    else{
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
+}
+
+unsigned int test_results(const double* const a, 
+                        const double* const b,
+                        const double* const results){
+    unsigned int correct = 0;
+    double sw_results[DATA_SIZE];          // results returned from device
+
+    unsigned int i;
+    for(i = 0; i < DATA_SIZE; i++){
+        int row = i/MATRIX_RANK;
+        int col = i%MATRIX_RANK;
+        double running = 0.0f;
+
+        int index;
+        for (index=0;index<MATRIX_RANK;index++){
+            int aIndex = row*MATRIX_RANK + index;
+            int bIndex = col + index*MATRIX_RANK;
+            running += a[aIndex] * b[bIndex];
+        }
+        sw_results[i] = running;
+    }
+    
+    for (i = 0;i < DATA_SIZE; i++) {
+        if(abs(results[i] - sw_results[i]) < 1E-32){
+            correct++;
+        }
+    }
+
+    printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
+    return correct;
 }
 
 int show_info(cl_platform_id platform_id){
