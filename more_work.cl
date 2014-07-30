@@ -1,6 +1,6 @@
 
 __kernel //__attribute__ ((reqd_work_group_size(2048, 2048, 1)))
-void more_work(__global int* a, __global int* b, __global int* output)
+void more_work(__global double* a, __global double* b, __global double* output)
 {
     int r = get_global_id(0);
     int c, index, running;
