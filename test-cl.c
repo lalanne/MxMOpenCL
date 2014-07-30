@@ -54,7 +54,7 @@ int main(int argc, char** argv){
         return EXIT_FAILURE;
     }
 
-    clock_t init_data_begin, init_data_end;                                                                                                                    
+    clock_t init_data_begin, init_data_end;
     double init_data_time;
 
     init_data_begin = clock();
