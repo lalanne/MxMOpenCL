@@ -3,7 +3,7 @@
 #PBS -l walltime=10:00:00
 #PBS -A ipcc
 #PBS -j oe
-#PBS -N bench_opt_2_fp
+#PBS -N bench_master_fp
 #PBS -q PhiQ
 
 cd $PBS_O_WORKDIR
