@@ -18,12 +18,15 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 1024
+#define MATRIX_RANK 4096
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
 int show_info(cl_platform_id platform_id);
 int load_file_to_memory(const char *filename, char **result);
+unsigned int test_results(const double* const a, 
+                        const double* const b,
+                        const double* const results);
 
 int main(int argc, char** argv){
     int err;                            // error code returned from api calls
@@ -31,8 +34,6 @@ int main(int argc, char** argv){
     double a[DATA_SIZE];                   // original data set given to device
     double b[DATA_SIZE];                   // original data set given to device
     double results[DATA_SIZE];             // results returned from device
-    double sw_results[DATA_SIZE];          // results returned from device
-    unsigned int correct;               // number of correct results returned
 
 
     cl_platform_id platform_id;         // platform id
@@ -47,10 +48,13 @@ int main(int argc, char** argv){
     cl_mem input_b;                     // device memory used for the input array
     cl_mem output;                      // device memory used for the output array
    
-    if (argc != 2){
+    if (argc != 3){
         printf("%s <inputfile>\n", argv[0]);
         return EXIT_FAILURE;
     }
+
+    const unsigned int wgSize = atoi(argv[2]);
+    printf("Working Group size[%u] kernel[%s] \n", wgSize, argv[1]);
 
     clock_t init_data_begin, init_data_end; 
     double init_data_time;
@@ -277,7 +281,7 @@ int main(int argc, char** argv){
   // using the maximum number of work group items for this device
   //
     const size_t global = MATRIX_RANK;// global domain size for our calculation
-    const size_t local = MATRIX_RANK;// local domain size for our calculation
+    const size_t local = wgSize;//MATRIX_RANK;// local domain size for our calculation
 
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
@@ -289,7 +293,7 @@ int main(int argc, char** argv){
                                 1, 
                                 NULL, 
                                 &global, 
-                                /*&local*/NULL, 
+                                &local, 
                                 0, 
                                 NULL, 
                                 &event);
@@ -339,35 +343,9 @@ int main(int argc, char** argv){
     double test_time;                                                                                                                     
     test_begin = clock();  
     
-    
-  // Validate our results
-  //
-  correct = 0;
-  for(i = 0; i < DATA_SIZE; i++)
-  {
-    int row = i/MATRIX_RANK;
-    int col = i%MATRIX_RANK;
-    double running = 0.0;
-    int index;
-    for (index=0;index<MATRIX_RANK;index++) {
-      int aIndex = row*MATRIX_RANK + index;
-      int bIndex = col + index*MATRIX_RANK;
-      running += a[aIndex] * b[bIndex];
-    }
-    sw_results[i] = running;
-  }
-    double error = 0.0;
-    for (i = 0;i < DATA_SIZE; i++) {
-        error = results[i] - sw_results[i];
-        if(error < 1E-32){
-            correct++;
-        }
-    }
-    
-  // Print a brief summary detailing the results
-  //
-  printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
-
+    const unsigned int correctElements = 0;/*test_results(a,
+                                                    b,
+                                                    results);    */
     test_end = clock();
     test_time = (double)(test_end - test_begin) / CLOCKS_PER_SEC;
     printf("\ntest time [ms]: [%f]\n", test_time*1000);
@@ -383,7 +361,7 @@ int main(int argc, char** argv){
   clReleaseCommandQueue(commands);
   clReleaseContext(context);
 
-  if(correct == DATA_SIZE){
+  if(correctElements == DATA_SIZE){
     printf("Test passed!\n");
     return EXIT_SUCCESS;
   }
@@ -391,6 +369,37 @@ int main(int argc, char** argv){
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
+}
+
+unsigned int test_results(const double* const a, 
+                        const double* const b,
+                        const double* const results){
+    unsigned int correct = 0;
+    double sw_results[DATA_SIZE];          // results returned from device
+
+    unsigned int i;
+    for(i = 0; i < DATA_SIZE; i++){
+        int row = i/MATRIX_RANK;
+        int col = i%MATRIX_RANK;
+        double running = 0.0f;
+
+        int index;
+        for (index=0;index<MATRIX_RANK;index++){
+            int aIndex = row*MATRIX_RANK + index;
+            int bIndex = col + index*MATRIX_RANK;
+            running += a[aIndex] * b[bIndex];
+        }
+        sw_results[i] = running;
+    }
+    
+    for (i = 0;i < DATA_SIZE; i++) {
+        if(abs(results[i] - sw_results[i]) < 1E-32){
+            correct++;
+        }
+    }
+
+    printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
+    return correct;
 }
 
 int show_info(cl_platform_id platform_id){
