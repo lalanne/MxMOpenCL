@@ -18,7 +18,7 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 1024
+#define MATRIX_RANK 4096
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
