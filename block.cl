@@ -1,31 +1,57 @@
+/*  Matrix Multiplication  a*b = output
+    Optimisation using tiling    
+    Tiles of size: (BLOCK_SIZE x BLOCK_SIZE)
+    Each work group computes one block of C at a time
+    Each work group stores the sub-matrices of A and B in local memory
+    Each work item computes an element of C = dot product of a row and a column      */
 
-__kernel //__attribute__ ((reqd_work_group_size(2048, 2048, 1)))
-void private_local_memory(__global double* a, __global double* b, __global double* output, __local double* B_local)
+#define BLOCK_SIZE 16
+#define AS(i,j) as[j + i*BLOCK_SIZE]
+#define BS(i,j) bs[j + i*BLOCK_SIZE]
+
+__kernel __attribute__ ((reqd_work_group_size(BLOCK_SIZE, BLOCK_SIZE, 1)))
+void block(__global double* a, __global double* b, __global double* output, __local double* as, __local double* bs)
 {
-    int r = get_global_id(0);
-    int c, k, index;
-    double running;
+    // Index of the tile/work-group
+    int block_x = get_group_id(0);
+    int block_y = get_group_id(1);
+
+    // Index of the thread within the tile/Index of the work item
+    int thread_x = get_local_id(0);
+    int thread_y = get_local_id(1);
+
     int rank = get_global_size(0);
-    int iloc = get_local_id(0); 
-    int nloc = get_local_size(0);
+    double running = 0.0f;
 
-    double A_private[1024];
+   // Starting index for a and b matrices i.e. first sub matrices
+    int a_index = rank * BLOCK_SIZE * block_y;
+    int b_index = BLOCK_SIZE * block_x;
 
-    for(index = 0; index < rank; index++){
-        A_private[index] = a[r*rank + index];
-    }
+    // Step sizes for a and b, cycle through
+    int a_step = BLOCK_SIZE;
+    int b_step = BLOCK_SIZE * rank;
 
-    for (c=0; c < rank; c++) {
-        for (k = iloc; k < rank; k += nloc){
-            B_local[k] = b[k*rank+c];
-        }
+    int end = a_index + (rank - 1);
+    int r, c, n;
+    
+    // Cycle through all sub-matrices of a and b and compute dot products
+    for(r = a_index, c = b_index; r < end; r += a_step, c += b_step)
+    {
+        // Load sub-matrices from global memory to local memory
+        AS(thread_y, thread_x) = a[r + rank*thread_y + thread_x];
+        BS(thread_y, thread_x) = b[c + rank*thread_y + thread_x];
+
+    // Wait for all work items to load data
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+#pragma unroll
+
+        // Dot product
+        for(n = 0; n < BLOCK_SIZE; ++n)
+            running += AS(thread_y, n)*BS(n, thread_x);
+
         barrier(CLK_LOCAL_MEM_FENCE);
-        running  = 0.0f;
-        for(index = 0; index <  rank; index++)
-            running +=  A_private[index] * B_local[index];
-        output[r*rank + c] = running;
-        barrier(CLK_LOCAL_MEM_FENCE);
     }
-
-    return;
+    // write sub-matrix to device memory
+    output[get_global_id(1)*get_global_size(0) + get_global_id(0)] = running;
 }

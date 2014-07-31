@@ -52,8 +52,8 @@ int main(int argc, char** argv){
         return EXIT_FAILURE;
     }
 
-    const unsigned int wgSize = atoi(argv[2]);
-    printf("Working Group size[%u] kernel[%s] \n", wgSize, argv[1]);
+    const unsigned int blockSize = atoi(argv[2]);
+    printf("Working Group size[%u] kernel[%s] \n", blockSize, argv[1]);
 
     clock_t init_data_begin, init_data_end;
     double init_data_time;
@@ -65,7 +65,7 @@ int main(int argc, char** argv){
     for(i = 0; i < DATA_SIZE; i++) {
         a[i] = (double)i;
         b[i] = (double)i;
-        results[i] = 0;
+        results[i] = 0.0f;
     }
 
     init_data_end = clock();
@@ -208,7 +208,7 @@ int main(int argc, char** argv){
 
   // Create the compute kernel in the program we wish to run
   //
-  kernel = clCreateKernel(program, "private_local_memory", &err);
+  kernel = clCreateKernel(program, "block", &err);
   if (!kernel || err != CL_SUCCESS)
   {
     printf("Error: Failed to create compute kernel!\n");
@@ -265,23 +265,28 @@ int main(int argc, char** argv){
     
   // Set the arguments to our compute kernel
   //
-  err = 0;
-  err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input_a);
-  err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &input_b);
-  err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &output);
-  err |= clSetKernelArg(kernel, 3, sizeof(double)*MATRIX_RANK, NULL);
-  if (err != CL_SUCCESS)
-  {
-    printf("Error: Failed to set kernel arguments! %d\n", err);
-    printf("Test failed\n");
-    return EXIT_FAILURE;
-  }
+    err = 0;
+    err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input_a);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &input_b);
+    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &output);
+    err |= clSetKernelArg(kernel, 3, sizeof(double) * blockSize * blockSize, NULL);
+    err |= clSetKernelArg(kernel, 4, sizeof(double) * blockSize * blockSize, NULL);
+
+    if (err != CL_SUCCESS){
+        printf("Error: Failed to set kernel arguments! %d\n", err);
+        printf("Test failed\n");
+        return EXIT_FAILURE;
+    }
 
   // Execute the kernel over the entire range of our 1d input data set
   // using the maximum number of work group items for this device
-  //
-    const size_t global = MATRIX_RANK;// global domain size for our calculation
-    const size_t local = wgSize; //MATRIX_RANK;// local domain size for our calculation
+    size_t global[2]; // global domain size for our calculation
+    size_t local[2]; // local domain size for our calculation
+ 
+    global[0] = MATRIX_RANK;
+    global[1] = MATRIX_RANK;
+    local[0] = blockSize;  // Dimension of block size - each work item computes a dot product
+    local[1] = blockSize;
 
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
@@ -322,10 +327,10 @@ int main(int argc, char** argv){
 
     err = clEnqueueNDRangeKernel(commands, 
                                 kernel, 
-                                1, 
+                                2, 
                                 NULL, 
-                                &global, 
-                                &local, 
+                                (size_t*)&global, 
+                                (size_t*)&local, 
                                 0, 
                                 NULL, 
                                 &event);
@@ -364,7 +369,6 @@ int main(int argc, char** argv){
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
-
   clWaitForEvents(1, &readevent);
 
     transfer_back_end = clock();
