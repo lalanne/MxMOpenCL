@@ -24,6 +24,9 @@ const unsigned int SUCCESS = 0;
 
 int show_info(cl_platform_id platform_id);
 int load_file_to_memory(const char *filename, char **result);
+unsigned int test_results(const double* const a,
+                        const double* const b,
+                        const double* const results);
 
 int main(int argc, char** argv){
     int err;                            // error code returned from api calls
@@ -31,8 +34,6 @@ int main(int argc, char** argv){
     double a[DATA_SIZE];                   // original data set given to device
     double b[DATA_SIZE];                   // original data set given to device
     double results[DATA_SIZE];             // results returned from device
-    double sw_results[DATA_SIZE];          // results returned from device
-    unsigned int correct;               // number of correct results returned
 
     size_t global[2];                   // global domain size for our calculation
     size_t local[2];                    // local domain size for our calculation
@@ -49,10 +50,14 @@ int main(int argc, char** argv){
     cl_mem input_b;                     // device memory used for the input array
     cl_mem output;                      // device memory used for the output array
    
-    if (argc != 2){
+    if (argc != 4){
         printf("%s <inputfile>\n", argv[0]);
         return EXIT_FAILURE;
     }
+
+    const unsigned int wgSize1D = atoi(argv[2]);
+    const unsigned int wgSize2D = atoi(argv[3]);
+    printf("Working Group size 1D[%u] 2D[%u] kernel[%s] \n", wgSize1D, wgSize2D, argv[1]);
 
     clock_t init_data_begin, init_data_end;
     double init_data_time;
@@ -281,8 +286,8 @@ int main(int argc, char** argv){
 
     global[0] = MATRIX_RANK;
     global[1] = MATRIX_RANK;
-    local[0] = 1;//MATRIX_RANK;
-    local[1] = 1;//MATRIX_RANK;
+    local[0] = wgSize1D;//MATRIX_RANK;
+    local[1] = wgSize2D;//MATRIX_RANK;
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
     kernel_begin = clock();  
@@ -343,44 +348,10 @@ int main(int argc, char** argv){
     double test_time;                                                                                                                     
     test_begin = clock();  
     
+    const unsigned int correctElements = 0;/*test_results(a,
+                                                    b,
+                                                    results);*/
     
-  // Validate our results
-  //
-  /*
-  correct = 0;
-  for(i = 0; i < DATA_SIZE; i++)
-  {
-    int row = i/MATRIX_RANK;
-    int col = i%MATRIX_RANK;
-    double running = 0.0f;
-    int index;
-    for (index=0;index<MATRIX_RANK;index++) {
-      int aIndex = row*MATRIX_RANK + index;
-      int bIndex = col + index*MATRIX_RANK;
-      running += a[aIndex] * b[bIndex];
-    }
-    sw_results[i] = running;
-  }
-  
-  double error = 0.0;
-  for (i = 0;i < DATA_SIZE; i++) {
-    error = results[i] - sw_results[i];
-    if(error < 1E-32){
-      correct++;
-    }
-  }
-     printf("Software\n");
-   for (i=0;i<DATA_SIZE;i++) {
-     //printf("%0.2f ",sw_results[i]);
-  //   printf("%f ",sw_results[i]);
-     //if (((i+1) % 16) == 0)
-    //   printf("\n");
-   }
-    */
-  // Print a brief summary detailing the results
-  //
-  printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
-
     test_end = clock();
     test_time = (double)(test_end - test_begin) / CLOCKS_PER_SEC;
     printf("\ntest time [ms]: [%f]\n", test_time*1000);
@@ -396,7 +367,7 @@ int main(int argc, char** argv){
   clReleaseCommandQueue(commands);
   clReleaseContext(context);
 
-  if(correct == DATA_SIZE){
+  if(correctElements == DATA_SIZE){
     printf("Test passed!\n");
     return EXIT_SUCCESS;
   }
@@ -404,6 +375,37 @@ int main(int argc, char** argv){
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
+}
+
+unsigned int test_results(const double* const a,
+                        const double* const b,
+                        const double* const results){
+    unsigned int correct = 0;
+    double sw_results[DATA_SIZE];          // results returned from device
+
+    unsigned int i;
+    for(i = 0; i < DATA_SIZE; i++){
+        int row = i/MATRIX_RANK;
+        int col = i%MATRIX_RANK;
+        double running = 0.0f;
+
+        int index;
+        for (index=0;index<MATRIX_RANK;index++){
+            int aIndex = row*MATRIX_RANK + index;
+            int bIndex = col + index*MATRIX_RANK;
+            running += a[aIndex] * b[bIndex];
+        }
+        sw_results[i] = running;
+    }
+
+    for (i = 0;i < DATA_SIZE; i++) {
+        if(abs(results[i] - sw_results[i]) < 1E-32){
+            correct++;
+        }
+    }
+
+    printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
+    return correct;
 }
 
 int show_info(cl_platform_id platform_id){
