@@ -47,12 +47,15 @@ int main(int argc, char** argv){
     cl_mem input_b;                     // device memory used for the input array
     cl_mem output;                      // device memory used for the output array
    
-    if (argc != 2){
+    if (argc != 3){
         printf("%s <inputfile>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    clock_t init_data_begin, init_data_end;                                                                                                                    
+    const unsigned int wgSize = atoi(argv[2]);
+    printf("Working Group size[%u] kernel[%s] \n", wgSize, argv[1]);
+
+    clock_t init_data_begin, init_data_end;
     double init_data_time;
 
     init_data_begin = clock();
@@ -65,7 +68,7 @@ int main(int argc, char** argv){
         results[i] = 0;
     }
 
-    init_data_end = clock();                                                                                                                                            
+    init_data_end = clock();
     init_data_time = (double)(init_data_end - init_data_begin) / CLOCKS_PER_SEC;                       
     printf("\ninit data time [ms]: [%f]\n", init_data_time*1000);
 
@@ -138,7 +141,7 @@ int main(int argc, char** argv){
     return EXIT_FAILURE;
   }
 
-    prelude_end = clock();                                                                                                                                            
+    prelude_end = clock();
     prelude_time = (double)(prelude_end - prelude_begin) / CLOCKS_PER_SEC;                       
     printf("\nprelude time [ms]: [%f]\n", prelude_time*1000);
     
@@ -278,12 +281,44 @@ int main(int argc, char** argv){
   // using the maximum number of work group items for this device
   //
     const size_t global = MATRIX_RANK;// global domain size for our calculation
-    const size_t local = 8; //MATRIX_RANK;// local domain size for our calculation
+    const size_t local = wgSize; //MATRIX_RANK;// local domain size for our calculation
 
     clock_t kernel_begin, kernel_end;
     double kernel_time;                                                                                                                     
     kernel_begin = clock();  
 
+    size_t kernel_work_group_size = 0;
+    size_t kernel_local_mem_size = 0;
+    size_t kernel_private_mem_size = 0;
+    size_t kernel_preferred_work_group_size_multiple = 0;
+    clGetKernelWorkGroupInfo(kernel, 
+                            device_id, 
+                            CL_KERNEL_WORK_GROUP_SIZE, 
+                            sizeof(size_t), 
+                            &kernel_work_group_size, 
+                            NULL);
+    clGetKernelWorkGroupInfo(kernel, 
+                            device_id, 
+                            CL_KERNEL_LOCAL_MEM_SIZE, 
+                            sizeof(size_t), 
+                            &kernel_local_mem_size, 
+                            NULL);
+    clGetKernelWorkGroupInfo(kernel, 
+                            device_id, 
+                            CL_KERNEL_PRIVATE_MEM_SIZE, 
+                            sizeof(size_t), 
+                            &kernel_private_mem_size, 
+                            NULL);
+    clGetKernelWorkGroupInfo(kernel, 
+                            device_id, 
+                            CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, 
+                            sizeof(size_t), 
+                            &kernel_preferred_work_group_size_multiple, 
+                            NULL);
+    printf("kernel_work_group_size [%u]\n", (unsigned int)kernel_work_group_size);
+    printf("kernel_local_mem_size [%u]\n", (unsigned int)kernel_local_mem_size);
+    printf("kernel_private_mem_size [%u]\n", (unsigned int)kernel_private_mem_size);
+    printf("kernel_preferred_work_group_size_multiple [%u]\n", (unsigned int)kernel_preferred_work_group_size_multiple);
 
     err = clEnqueueNDRangeKernel(commands, 
                                 kernel, 

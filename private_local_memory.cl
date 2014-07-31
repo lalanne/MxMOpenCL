@@ -9,7 +9,7 @@ void private_local_memory(__global double* a, __global double* b, __global doubl
     int iloc = get_local_id(0); 
     int nloc = get_local_size(0);
 
-    double A_private[4096];
+    double A_private[1024];
 
     for(index = 0; index < rank; index++){
         A_private[index] = a[r*rank + index];
