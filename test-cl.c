@@ -379,9 +379,9 @@ int main(int argc, char** argv){
     double test_time;                                                                                                                     
     test_begin = clock();  
     
-    const unsigned int correctElements = test_results(a,
+    const unsigned int correctElements = 0;/*test_results(a,
                                                     b,
-                                                    results);    
+                                                    results);    */
 
     test_end = clock();
     test_time = (double)(test_end - test_begin) / CLOCKS_PER_SEC;
