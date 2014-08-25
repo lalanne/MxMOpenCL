@@ -1,4 +1,4 @@
-
+//#pragma OPENCL EXTENSION cl_khr_fp64: enable
 __kernel //__attribute__ ((reqd_work_group_size(2048, 2048, 1)))
 void private_memory(__global double* a, __global double* b, __global double* output)
 {
