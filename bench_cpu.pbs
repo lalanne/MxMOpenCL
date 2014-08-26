@@ -1,0 +1,11 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=20
+#PBS -l walltime=10:00:00
+#PBS -A ipcc
+#PBS -j oe
+#PBS -N bench_opt_3_dp_cpu
+#PBS -q PhiQ
+
+cd $PBS_O_WORKDIR
+module load dev phi intel/comp/14.0.3 
+./bench_cpu.sh
