@@ -3,9 +3,9 @@
 #PBS -l walltime=10:00:00
 #PBS -A ipcc
 #PBS -j oe
-#PBS -N bench_master_sp_phi
+#PBS -N bench_master_sp_cpu
 #PBS -q PhiQ
 
 cd $PBS_O_WORKDIR
 module load dev phi intel/comp/14.0.3 
-./bench_phi.sh
+./bench_cpu.sh
