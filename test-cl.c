@@ -18,7 +18,7 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 1024
+#define MATRIX_RANK 4096
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
@@ -100,7 +100,7 @@ int main(int argc, char** argv){
 #endif
 
     err = clGetDeviceIDs(platform_id, 
-                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : /*CL_DEVICE_TYPE_GPU*//*CL_DEVICE_TYPE_CPU*/CL_DEVICE_TYPE_ACCELERATOR,
+                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : CL_DEVICE_TYPE_GPU/*CL_DEVICE_TYPE_CPU*//*CL_DEVICE_TYPE_ACCELERATOR*/,
                         1, 
                         &device_id, 
                         NULL);
@@ -375,9 +375,9 @@ int main(int argc, char** argv){
     double test_time;                                                                                                                     
     test_begin = clock();  
     
-    const unsigned int correctElements = test_results(a,
+    const unsigned int correctElements = 0;/*test_results(a,
                                                     b,
-                                                    results);    
+                                                    results);    */
 
     test_end = clock();
     test_time = (double)(test_end - test_begin) / CLOCKS_PER_SEC;
