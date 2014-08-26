@@ -100,7 +100,7 @@ int main(int argc, char** argv){
 #endif
 
     err = clGetDeviceIDs(platform_id, 
-                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : CL_DEVICE_TYPE_GPU/*CL_DEVICE_TYPE_CPU*//*CL_DEVICE_TYPE_ACCELERATOR*/,
+                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : /*CL_DEVICE_TYPE_GPU*//*CL_DEVICE_TYPE_CPU*/CL_DEVICE_TYPE_ACCELERATOR,
                         1, 
                         &device_id, 
                         NULL);
