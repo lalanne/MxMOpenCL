@@ -24,16 +24,16 @@ const unsigned int SUCCESS = 0;
 
 int show_info(cl_platform_id platform_id);
 int load_file_to_memory(const char *filename, char **result);
-unsigned int test_results(const double* const a, 
-                        const double* const b,
-                        const double* const results);
+unsigned int test_results(const float* const a, 
+                        const float* const b,
+                        const float* const results);
 
 int main(int argc, char** argv){
     int err;                            // error code returned from api calls
      
-    double a[DATA_SIZE];                   // original data set given to device
-    double b[DATA_SIZE];                   // original data set given to device
-    double results[DATA_SIZE];             // results returned from device
+    float a[DATA_SIZE];                   // original data set given to device
+    float b[DATA_SIZE];                   // original data set given to device
+    float results[DATA_SIZE];             // results returned from device
 
     cl_platform_id platform_id;         // platform id
     cl_device_id device_id;             // compute device id 
@@ -56,25 +56,25 @@ int main(int argc, char** argv){
     printf("Working Group size[%u] kernel[%s] \n", blockSize, argv[1]);
 
     clock_t init_data_begin, init_data_end;
-    double init_data_time;
+    float init_data_time;
 
     init_data_begin = clock();
     // Fill our data sets with pattern
     //
     int i = 0;
     for(i = 0; i < DATA_SIZE; i++) {
-        a[i] = (double)i;
-        b[i] = (double)i;
+        a[i] = (float)i;
+        b[i] = (float)i;
         results[i] = 0.0f;
     }
 
     init_data_end = clock();
-    init_data_time = (double)(init_data_end - init_data_begin) / CLOCKS_PER_SEC;                       
+    init_data_time = (float)(init_data_end - init_data_begin) / CLOCKS_PER_SEC;                       
     printf("\ninit data time [ms]: [%f]\n", init_data_time*1000);
 
 
     clock_t prelude_begin, prelude_end; 
-    double prelude_time;
+    float prelude_time;
 
     prelude_begin = clock();
 
@@ -142,13 +142,13 @@ int main(int argc, char** argv){
   }
 
     prelude_end = clock();
-    prelude_time = (double)(prelude_end - prelude_begin) / CLOCKS_PER_SEC;                       
+    prelude_time = (float)(prelude_end - prelude_begin) / CLOCKS_PER_SEC;                       
     printf("\nprelude time [ms]: [%f]\n", prelude_time*1000);
     
 
 /*********************************LOADING KERNEL FROM BINARY OR SOURCE********************************/
     clock_t load_begin, load_end; 
-    double load_time;
+    float load_time;
 
     load_begin = clock();
 
@@ -218,9 +218,9 @@ int main(int argc, char** argv){
 
   // Create the input and output arrays in device memory for our calculation
   //
-  input_a = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(double) * DATA_SIZE, NULL, NULL);
-  input_b = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(double) * DATA_SIZE, NULL, NULL);
-  output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(double) * DATA_SIZE, NULL, NULL);
+  input_a = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * DATA_SIZE, NULL, NULL);
+  input_b = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * DATA_SIZE, NULL, NULL);
+  output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * DATA_SIZE, NULL, NULL);
   if (!input_a || !input_b || !output)
   {
     printf("Error: Failed to allocate device memory!\n");
@@ -229,17 +229,17 @@ int main(int argc, char** argv){
   }    
 
     load_end = clock();
-    load_time = (double)(load_end - load_begin) / CLOCKS_PER_SEC;                       
+    load_time = (float)(load_end - load_begin) / CLOCKS_PER_SEC;                       
     printf("\nload time [ms]: [%f]\n", load_time*1000);
 
 
     clock_t transfer_begin, transfer_end; 
-    double transfer_time;
+    float transfer_time;
     transfer_begin = clock();
 
   // Write our data set into the input array in device memory 
   //
-  err = clEnqueueWriteBuffer(commands, input_a, CL_TRUE, 0, sizeof(double) * DATA_SIZE, a, 0, NULL, NULL);
+  err = clEnqueueWriteBuffer(commands, input_a, CL_TRUE, 0, sizeof(float) * DATA_SIZE, a, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to write to source array a!\n");
@@ -249,7 +249,7 @@ int main(int argc, char** argv){
 
   // Write our data set into the input array in device memory 
   //
-  err = clEnqueueWriteBuffer(commands, input_b, CL_TRUE, 0, sizeof(double) * DATA_SIZE, b, 0, NULL, NULL);
+  err = clEnqueueWriteBuffer(commands, input_b, CL_TRUE, 0, sizeof(float) * DATA_SIZE, b, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to write to source array b!\n");
@@ -258,7 +258,7 @@ int main(int argc, char** argv){
   }
 
     transfer_end = clock();
-    transfer_time = (double)(transfer_end - transfer_begin) / CLOCKS_PER_SEC;                       
+    transfer_time = (float)(transfer_end - transfer_begin) / CLOCKS_PER_SEC;                       
     printf("\ntransfer time [ms]: [%f]\n", transfer_time*1000);
 
     cl_event event;
@@ -269,8 +269,8 @@ int main(int argc, char** argv){
     err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input_a);
     err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &input_b);
     err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &output);
-    err |= clSetKernelArg(kernel, 3, sizeof(double) * blockSize * blockSize, NULL);
-    err |= clSetKernelArg(kernel, 4, sizeof(double) * blockSize * blockSize, NULL);
+    err |= clSetKernelArg(kernel, 3, sizeof(float) * blockSize * blockSize, NULL);
+    err |= clSetKernelArg(kernel, 4, sizeof(float) * blockSize * blockSize, NULL);
 
     if (err != CL_SUCCESS){
         printf("Error: Failed to set kernel arguments! %d\n", err);
@@ -289,7 +289,7 @@ int main(int argc, char** argv){
     local[1] = blockSize;
 
     clock_t kernel_begin, kernel_end;
-    double kernel_time;                                                                                                                     
+    float kernel_time;                                                                                                                     
     kernel_begin = clock();  
 
     size_t kernel_work_group_size = 0;
@@ -342,12 +342,12 @@ int main(int argc, char** argv){
     clWaitForEvents(1, &event);
 
     kernel_end = clock();
-    kernel_time = (double)(kernel_end - kernel_begin) / CLOCKS_PER_SEC;
+    kernel_time = (float)(kernel_end - kernel_begin) / CLOCKS_PER_SEC;
     printf("\nkernel time [ms]: [%f]\n", kernel_time*1000);
 
     cl_ulong time_start;
     cl_ulong time_end;
-    double total_time;
+    float total_time;
 
     clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
     clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
@@ -356,13 +356,13 @@ int main(int argc, char** argv){
 
 
     clock_t transfer_back_begin, transfer_back_end;
-    double transfer_back_time;                                                                                                                     
+    float transfer_back_time;                                                                                                                     
     transfer_back_begin = clock();  
 
   // Read back the results from the device to verify the output
   //
   cl_event readevent;
-  err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * DATA_SIZE, results, 0, NULL, &readevent );  
+  err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * DATA_SIZE, results, 0, NULL, &readevent );  
   if (err != CL_SUCCESS)
   {
     printf("Error: Failed to read output array! %d\n", err);
@@ -372,11 +372,11 @@ int main(int argc, char** argv){
   clWaitForEvents(1, &readevent);
 
     transfer_back_end = clock();
-    transfer_back_time = (double)(transfer_back_end - transfer_back_begin) / CLOCKS_PER_SEC;
+    transfer_back_time = (float)(transfer_back_end - transfer_back_begin) / CLOCKS_PER_SEC;
     printf("\ntransfer_back time [ms]: [%f]\n", transfer_back_time*1000);
 
     clock_t test_begin, test_end;  
-    double test_time;                                                                                                                     
+    float test_time;                                                                                                                     
     test_begin = clock();  
     
     const unsigned int correctElements = 0;/*test_results(a,
@@ -384,7 +384,7 @@ int main(int argc, char** argv){
                                                     results);    */
 
     test_end = clock();
-    test_time = (double)(test_end - test_begin) / CLOCKS_PER_SEC;
+    test_time = (float)(test_end - test_begin) / CLOCKS_PER_SEC;
     printf("\ntest time [ms]: [%f]\n", test_time*1000);
 
     
@@ -408,17 +408,17 @@ int main(int argc, char** argv){
   }
 }
 
-unsigned int test_results(const double* const a, 
-                        const double* const b,
-                        const double* const results){
+unsigned int test_results(const float* const a, 
+                        const float* const b,
+                        const float* const results){
     unsigned int correct = 0;
-    double sw_results[DATA_SIZE];          // results returned from device
+    float sw_results[DATA_SIZE];          // results returned from device
 
     unsigned int i;
     for(i = 0; i < DATA_SIZE; i++){
         int row = i/MATRIX_RANK;
         int col = i%MATRIX_RANK;
-        double running = 0.0f;
+        float running = 0.0f;
 
         int index;
         for (index=0;index<MATRIX_RANK;index++){
