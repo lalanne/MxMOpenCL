@@ -18,7 +18,7 @@
     #include <CL/cl.h>
 #endif
 
-#define MATRIX_RANK 4096
+#define MATRIX_RANK 2
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 const unsigned int SUCCESS = 0;
 
@@ -59,10 +59,6 @@ int main(int argc, char** argv){
     const unsigned int wgSize2D = atoi(argv[3]);
     printf("Working Group size 1D[%u] 2D[%u] kernel[%s] \n", wgSize1D, wgSize2D, argv[1]);
 
-    clock_t init_data_begin, init_data_end;
-    float init_data_time;
-
-    init_data_begin = clock();
     // Fill our data sets with pattern
     //
     int i = 0;
@@ -71,16 +67,6 @@ int main(int argc, char** argv){
         b[i] = (float)i;
         results[i] = 0.0f;
     }
-
-    init_data_end = clock();
-    init_data_time = (float)(init_data_end - init_data_begin) / CLOCKS_PER_SEC;                       
-    printf("\ninit data time [ms]: [%f]\n", init_data_time*1000);
-
-
-    clock_t prelude_begin, prelude_end; 
-    float prelude_time;
-
-    prelude_begin = clock();
 
   // Connect to first platform
   //
@@ -104,7 +90,7 @@ int main(int argc, char** argv){
 #endif
 
     err = clGetDeviceIDs(platform_id, 
-                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : /*CL_DEVICE_TYPE_GPU*//*CL_DEVICE_TYPE_CPU*/CL_DEVICE_TYPE_ACCELERATOR,
+                        fpga ? CL_DEVICE_TYPE_ACCELERATOR : CL_DEVICE_TYPE_GPU/*CL_DEVICE_TYPE_CPU*//*CL_DEVICE_TYPE_ACCELERATOR*/,
                         1, 
                         &device_id, 
                         NULL);
@@ -145,17 +131,7 @@ int main(int argc, char** argv){
     return EXIT_FAILURE;
   }
 
-    prelude_end = clock();                                                                                                                                            
-    prelude_time = (float)(prelude_end - prelude_begin) / CLOCKS_PER_SEC;                       
-    printf("\nprelude time [ms]: [%f]\n", prelude_time*1000);
-    
-
 /*********************************LOADING KERNEL FROM BINARY OR SOURCE********************************/
-    clock_t load_begin, load_end; 
-    float load_time;
-
-    load_begin = clock();
-
     int status;
     if(fpga){
         unsigned char *kernelbinary;
@@ -232,15 +208,6 @@ int main(int argc, char** argv){
     return EXIT_FAILURE;
   }    
 
-    load_end = clock();
-    load_time = (float)(load_end - load_begin) / CLOCKS_PER_SEC;                       
-    printf("\nload time [ms]: [%f]\n", load_time*1000);
-
-
-    clock_t transfer_begin, transfer_end; 
-    float transfer_time;
-    transfer_begin = clock();
-
   // Write our data set into the input array in device memory 
   //
   err = clEnqueueWriteBuffer(commands, input_a, CL_TRUE, 0, sizeof(float) * DATA_SIZE, a, 0, NULL, NULL);
@@ -261,11 +228,7 @@ int main(int argc, char** argv){
     return EXIT_FAILURE;
   }
 
-    transfer_end = clock();
-    transfer_time = (float)(transfer_end - transfer_begin) / CLOCKS_PER_SEC;                       
-    printf("\ntransfer time [ms]: [%f]\n", transfer_time*1000);
-
-    cl_event event;
+   cl_event event;
     
   // Set the arguments to our compute kernel
   //
@@ -288,10 +251,6 @@ int main(int argc, char** argv){
     global[1] = MATRIX_RANK;
     local[0] = wgSize1D;//MATRIX_RANK;
     local[1] = wgSize2D;//MATRIX_RANK;
-    clock_t kernel_begin, kernel_end;
-    float kernel_time;                                                                                                                     
-    kernel_begin = clock();  
-
 
     err = clEnqueueNDRangeKernel(commands, 
                                 kernel, 
@@ -309,10 +268,6 @@ int main(int argc, char** argv){
     }
     clWaitForEvents(1, &event);
 
-    kernel_end = clock();
-    kernel_time = (float)(kernel_end - kernel_begin) / CLOCKS_PER_SEC;
-    printf("\nkernel time [ms]: [%f]\n", kernel_time*1000);
-
     cl_ulong time_start;
     cl_ulong time_end;
     float total_time;
@@ -321,11 +276,6 @@ int main(int argc, char** argv){
     clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
     total_time = time_end - time_start;
     printf("\nPure kernel Execution time in milliseconds = %0.3f ms\n", (total_time / 1000000.0) );
-
-
-    clock_t transfer_back_begin, transfer_back_end;
-    float transfer_back_time;                                                                                                                     
-    transfer_back_begin = clock();  
 
   // Read back the results from the device to verify the output
   //
@@ -339,24 +289,9 @@ int main(int argc, char** argv){
   }
 
   clWaitForEvents(1, &readevent);
-
-    transfer_back_end = clock();
-    transfer_back_time = (float)(transfer_back_end - transfer_back_begin) / CLOCKS_PER_SEC;
-    printf("\ntransfer_back time [ms]: [%f]\n", transfer_back_time*1000);
-
-    clock_t test_begin, test_end;  
-    float test_time;                                                                                                                     
-    test_begin = clock();  
-    
     const unsigned int correctElements = 0;/*test_results(a,
                                                     b,
                                                     results);*/
-    
-    test_end = clock();
-    test_time = (float)(test_end - test_begin) / CLOCKS_PER_SEC;
-    printf("\ntest time [ms]: [%f]\n", test_time*1000);
-
-    
   // Shutdown and cleanup
   //
   clReleaseMemObject(input_a);
