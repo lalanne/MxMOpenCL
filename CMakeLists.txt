@@ -6,7 +6,9 @@ project (mxm)
 add_definitions(-Wall)
 
 add_executable(mxm
-            test-cl.c)
+            test-cl.cpp)
+
+include_directories(.)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(mxm OpenCL)
