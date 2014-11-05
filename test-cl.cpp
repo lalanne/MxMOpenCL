@@ -12,14 +12,21 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef __APPLE__
-    #include <OpenCL/opencl.h>
-#elif __linux
-    #include <CL/cl.h>
-#endif
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <string>
 
-#define MATRIX_RANK 2
+
+#include "cl.hpp"
+
+#define MATRIX_RANK 4
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
+
+#define DEVICE CL_DEVICE_TYPE_GPU
+
+using namespace std;
+
 const unsigned int SUCCESS = 0;
 
 int show_info(cl_platform_id platform_id);
@@ -28,28 +35,32 @@ unsigned int test_results(const float* const a,
                         const float* const b,
                         const float* const results);
 
+std::string loadProgram(std::string input)                          
+{
+    std::ifstream stream(input.c_str());
+    if (!stream.is_open()) {
+        std::cout << "Cannot open file: " << input << std::endl;
+        exit(1);
+    }
+
+     return std::string(
+        std::istreambuf_iterator<char>(stream),
+        (std::istreambuf_iterator<char>()));
+}
+
 int main(int argc, char** argv){
     // error code returned from api calls
     int err;                            
      
-    float a[DATA_SIZE];// original data set given to device
-    float b[DATA_SIZE];// original data set given to device
-    float results[DATA_SIZE];// results returned from device
+    std::vector<float> a(DATA_SIZE);
+    std::vector<float> b(DATA_SIZE);
+    std::vector<float> c(DATA_SIZE);
 
-    size_t global[2];// global domain size for our calculation
-    size_t local[2];// local domain size for our calculation
+    cl::Context context(DEVICE);
+    cl::CommandQueue queue(context);
 
-    cl_platform_id platform_id;         // platform id
-    cl_device_id device_id;             // compute device id 
-    cl_context context;                 // compute context
-    cl_command_queue commands;          // compute command queue
-    cl_program program;                 // compute program
-    cl_kernel kernel;                   // compute kernel
+    cl::Buffer d_a, d_b, d_c;
    
-   
-    cl_mem input_a;// device memory used for the input array
-    cl_mem input_b;// device memory used for the input array
-    cl_mem output;// device memory used for the output array
    
     if (argc != 4){
         printf("%s <inputfile>\n", argv[0]);
@@ -66,290 +77,25 @@ int main(int argc, char** argv){
     for(i = 0; i < DATA_SIZE; i++) {
         a[i] = (float)i;
         b[i] = (float)i;
-        results[i] = 0.0f;
+        c[i] = 0.0f;
     }
 
-    // Connect to first platform
-    err = clGetPlatformIDs(1,&platform_id,NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: Failed to find an OpenCL platform!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
+    d_a = cl::Buffer(context, a.begin(), a.end(), true);
+    d_b = cl::Buffer(context, b.begin(), b.end(), true);
+    d_c = cl::Buffer(context, c.begin(), c.end(), true);
 
-    if(show_info(platform_id) != SUCCESS){
-        printf("Error: Showing information!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
+    cl::Program program(context, loadProgram("naive.cl"), true);
 
-    int fpga = 0;
-#if defined (FPGA_DEVICE)
-    fpga = 1;
-#endif
+    auto naive = cl::make_kernel<float, float, float, cl::Buffer, cl::Buffer, cl::Buffer>(program, "naive");
 
-    err = clGetDeviceIDs(platform_id, 
-                        fpga? CL_DEVICE_TYPE_ACCELERATOR:CL_DEVICE_TYPE_GPU/*CL_DEVICE_TYPE_CPU*//*CL_DEVICE_TYPE_ACCELERATOR*/,
-                        1, 
-                        &device_id, 
-                        NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: Failed to create a device group!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
+    cl::NDRange global(MATRIX_RANK, MATRIX_RANK);
+    naive(cl::EnqueueArgs(queue, global), MATRIX_RANK, MATRIX_RANK, MATRIX_RANK, d_a, d_b, d_c);
 
-    cl_char string[10240] = {0};
-    // Get device name
-    err = clGetDeviceInfo(device_id, 
-                        CL_DEVICE_NAME, 
-                        sizeof(string), 
-                        &string, 
-                        NULL);
-    if (err != CL_SUCCESS){   
-        printf("Error: could not get device information\n");
-        return EXIT_FAILURE;
-    }   
-    printf("Name of device: %s\n", string);
-  
-    // Create a compute context 
-    context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
-    if (!context){
-        printf("Error: Failed to create a compute context!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
+    queue.finish();
 
-    // Create a command commands
-    commands = clCreateCommandQueue(context, 
-                                    device_id, 
-                                    CL_QUEUE_PROFILING_ENABLE, 
-                                    &err);
-    if (!commands){
-        printf("Error: Failed to create a command commands!\n");
-        printf("Error: code %i\n",err);
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
+    cl::copy(queue, d_c, c.begin(), c.end());
+    cout<<"here"<<endl;
 
-/****************LOADING KERNEL FROM BINARY OR SOURCE*****************/
-    int status;
-    if(fpga){
-        unsigned char *kernelbinary;
-        char *xclbin=argv[1];
-        printf("loading binary [%s]\n", xclbin);
-        int n_i = load_file_to_memory(xclbin, (char **) &kernelbinary);
-        if (n_i < 0) {
-            printf("failed to load kernel from xclbin: %s\n", xclbin);
-            printf("Test failed\n");
-            return EXIT_FAILURE;
-        }
-        size_t n = n_i;
-        program = clCreateProgramWithBinary(context, 
-                                1, 
-                                &device_id, 
-                                &n,
-                                (const unsigned char **) &kernelbinary, 
-                                &status, 
-                                &err);
-    }
-    else{
-        unsigned char *kernelsrc;
-        char *clsrc = argv[1];
-        printf("loading source [%s]\n", clsrc);
-        int n_i = load_file_to_memory(clsrc, (char **) &kernelsrc);
-        if (n_i < 0) {
-            printf("failed to load kernel from source: %s\n", clsrc);
-            printf("Test failed\n");
-            return EXIT_FAILURE;
-        }
-
-        program = clCreateProgramWithSource(context, 
-                                    1, 
-                                    (const char **) &kernelsrc, 
-                                    NULL, 
-                                    &err);
-    }
-
-
-    if((!program) || (err!=CL_SUCCESS)){
-        printf("Error: Failed to create compute program from binary %d!\n", err);
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-/****************************************************************/
-
-  // Build the program executable
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-    if(err != CL_SUCCESS){
-        size_t len;
-        char buffer[2048];
-
-        printf("Error: Failed to build program executable!\n");
-        clGetProgramBuildInfo(program, 
-                            device_id, 
-                            CL_PROGRAM_BUILD_LOG, 
-                            sizeof(buffer), 
-                            buffer, 
-                            &len);
-        printf("%s\n", buffer);
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-
-    // Create the compute kernel in the program we wish to run
-    kernel = clCreateKernel(program, "naive", &err);
-    if(!kernel || err != CL_SUCCESS){
-        printf("Error: Failed to create compute kernel!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-
-//Create the input and output arrays in device memory for our calculation
-    input_a = clCreateBuffer(context,  
-                            CL_MEM_READ_ONLY,  
-                            sizeof(float) * DATA_SIZE, 
-                            NULL, 
-                            NULL);
-    input_b = clCreateBuffer(context,  
-                            CL_MEM_READ_ONLY,  
-                            sizeof(float) * DATA_SIZE, 
-                            NULL, 
-                            NULL);
-    output = clCreateBuffer(context, 
-                            CL_MEM_WRITE_ONLY, 
-                            sizeof(float) * DATA_SIZE, 
-                            NULL, 
-                            NULL);
-    if (!input_a || !input_b || !output){
-        printf("Error: Failed to allocate device memory!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }    
-
-    // Write our data set into the input array in device memory 
-    err = clEnqueueWriteBuffer(commands, 
-                            input_a, 
-                            CL_TRUE, 
-                            0, 
-                            sizeof(float) * DATA_SIZE, 
-                            a, 
-                            0, 
-                            NULL, 
-                            NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: Failed to write to source array a!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-
-    //Write our data set into the input array in device memory 
-    err = clEnqueueWriteBuffer(commands, 
-                            input_b, 
-                            CL_TRUE, 
-                            0, 
-                            sizeof(float) * DATA_SIZE, 
-                            b, 
-                            0, 
-                            NULL, 
-                            NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: Failed to write to source array b!\n");
-        printf("Test failed\n");
-     return EXIT_FAILURE;
-    }
-
-    cl_event event;
-    
-    // Set the arguments to our compute kernel
-    err = 0;
-    err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input_a);
-    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &input_b);
-    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &output);
-    if (err != CL_SUCCESS){
-        printf("Error: Failed to set kernel arguments! %d\n", err);
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-
-    // Execute the kernel over the entire range of our 1d input data set
-    // using the maximum number of work group items for this device
-    global[0] = MATRIX_RANK;
-    global[1] = MATRIX_RANK;
-    local[0] = wgSize1D;//MATRIX_RANK;
-    local[1] = wgSize2D;//MATRIX_RANK;
-
-    err = clEnqueueNDRangeKernel(commands, 
-                                kernel, 
-                                2, 
-                                NULL, 
-                                (size_t*)&global, 
-                                (size_t*)&local, 
-                                0, 
-                                NULL, 
-                                &event);
-    if (err){
-        printf("Error: Failed to execute kernel! %d\n", err);
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-    clWaitForEvents(1, &event);
-
-    cl_ulong time_start;
-    cl_ulong time_end;
-    float total_time;
-
-    clGetEventProfilingInfo(event, 
-                            CL_PROFILING_COMMAND_START, 
-                            sizeof(time_start), 
-                            &time_start, 
-                            NULL);
-    clGetEventProfilingInfo(event, 
-                            CL_PROFILING_COMMAND_END, 
-                            sizeof(time_end), 
-                            &time_end, 
-                            NULL);
-    total_time = time_end - time_start;
-    printf("\nPure kernel Execution time in milliseconds = %0.3f ms\n", (total_time / 1000000.0) );
-
-    // Read back the results from the device to verify the output
-    cl_event readevent;
-    err = clEnqueueReadBuffer(commands, 
-                            output, 
-                            CL_TRUE, 
-                            0, 
-                            sizeof(float) * DATA_SIZE, 
-                            results, 
-                            0, 
-                            NULL, 
-                            &readevent);  
-    if (err != CL_SUCCESS){
-        printf("Error: Failed to read output array! %d\n", err);
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-
-    clWaitForEvents(1, &readevent);
-    const unsigned int correctElements = test_results(a,
-                                                    b,
-                                                    results);
-    // Shutdown and cleanup
-    clReleaseMemObject(input_a);
-    clReleaseMemObject(input_b);
-    clReleaseMemObject(output);
-    clReleaseProgram(program);
-    clReleaseKernel(kernel);
-    clReleaseCommandQueue(commands);
-    clReleaseContext(context);
-
-    if(correctElements == DATA_SIZE){
-        printf("Test passed!\n");
-        return EXIT_SUCCESS;
-    }
-    else{
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
 }
 
 unsigned int test_results(const float* const a,
