@@ -8,10 +8,10 @@
 #include <fstream>
 #include <string>
 
-#include "cl.hpp"
+#include "cl_noGL_lalanne.hpp"
 
-#define MATRIX_RANK 4
-#define DATA_SIZE MATRIX_RANK*MATRIX_RANK
+const unsigned int MATRIX_RANK = 4;
+const unsigned int DATA_SIZE = MATRIX_RANK*MATRIX_RANK;
 
 #define DEVICE CL_DEVICE_TYPE_DEFAULT//CL_DEVICE_TYPE_CPU//CL_DEVICE_TYPE_GPU
 
@@ -48,11 +48,18 @@ int main(int argc, char** argv){
         naive(EnqueueArgs(DATA_SIZE), d_a, d_b, d_c);
     }
     catch(Error& e){
-        cout<<"ERROR: exception: "<<e.what()<<endl;
+        cout<<"ERROR: copy exception: "<<e.what()<<endl;
     }
 
+    sleep(3);
+
     vector<float> c(DATA_SIZE);
-    cl::copy(d_c, begin(c), end(c));
+    try{
+        cl::copy(d_c, begin(c), end(c));
+    }
+    catch(Error& e){
+        cout<<"ERROR: exception: "<<e.what()<<endl;
+    }
     cout<<"here"<<endl;
 }
 
