@@ -56,8 +56,8 @@ int main(int argc, char** argv){
     }
 
     d_a = Buffer(context, begin(a), end(a), true);
-    d_b = Buffer(context, b.begin(), b.end(), true);
-    d_c = Buffer(context, c.begin(), c.end(), true);
+    d_b = Buffer(context, begin(b), end(b), true);
+    d_c = Buffer(context, begin(c), end(c), true);
 
     try{
         Program program(context, loadProgram("naive.cl"), true);
@@ -73,7 +73,7 @@ int main(int argc, char** argv){
     queue.finish();
     sleep(3);
 
-    copy(queue, d_c, c.begin(), c.end());
+    copy(queue, d_c, begin(c), end(c));
     cout<<"here"<<endl;
 }
 
