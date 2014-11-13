@@ -1,5 +1,6 @@
-
+#include <unistd.h>/*sleep*/
 #include <stdlib.h>
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -54,7 +55,7 @@ int main(int argc, char** argv){
         c[i] = 0.0f;
     }
 
-    d_a = Buffer(context, a.begin(), a.end(), true);
+    d_a = Buffer(context, begin(a), end(a), true);
     d_b = Buffer(context, b.begin(), b.end(), true);
     d_c = Buffer(context, c.begin(), c.end(), true);
 
