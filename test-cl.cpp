@@ -5,12 +5,13 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <iterator>
 #include <fstream>
 #include <string>
 
 #include "cl_noGL_lalanne.hpp"
 
-const unsigned int MATRIX_RANK = 4;
+const unsigned int MATRIX_RANK = 2;
 const unsigned int DATA_SIZE = MATRIX_RANK*MATRIX_RANK;
 
 #define DEVICE CL_DEVICE_TYPE_DEFAULT//CL_DEVICE_TYPE_CPU//CL_DEVICE_TYPE_GPU
@@ -28,10 +29,9 @@ unsigned int test_results(const float* const a,
 string loadProgram(string input);
 
 int main(int argc, char** argv){
-    if (argc != 2){
-        printf("%s <inputfile>\n", argv[0]);
-        return EXIT_FAILURE;
-    }
+    string kernel_name;
+    if (argc != 2) { cout<<argv[0]<<" <inputfile>"<<endl; return EXIT_FAILURE; }
+    else kernel_name = argv[1];
 
     vector<float> a(DATA_SIZE, 0.1);
     vector<float> b(DATA_SIZE, 0.1);
@@ -43,15 +43,16 @@ int main(int argc, char** argv){
     Buffer d_b(context, begin(b), end(b), true);
     Buffer d_c(context, CL_MEM_WRITE_ONLY, DATA_SIZE * sizeof(float));
     
-    string programText = loadProgram("naive.cl");
-    Program program(context, programText, true);
+    string programText = loadProgram(kernel_name);
     try{
+        Program program(context, programText, true);
         auto naive = make_kernel<Buffer, Buffer, Buffer>(program, "naive");
-        naive(EnqueueArgs(queue, DATA_SIZE), d_a, d_b, d_c);
+        naive(EnqueueArgs(queue, /*DATA_SIZE*/1), d_a, d_b, d_c);
         queue.finish();
     }
     catch(Error& e){
         cout<<"ERROR: exception: "<<e.what()<<" code: "<<e.err()<<endl;
+        return EXIT_FAILURE;
     }
 
     vector<float> c(DATA_SIZE);
@@ -60,9 +61,12 @@ int main(int argc, char** argv){
     }
     catch(Error& e){
         cout<<"ERROR: copy back exception: "<<e.what()<<" code: "<<e.err()<<endl;
+        return EXIT_FAILURE;
     }
 
-    cout<<"end of the program...."<<endl;
+    std::copy(begin(c), end(c), ostream_iterator<float>(cout, ", "));
+    cout<<endl<<endl;
+    return SUCCESS;
 }
 
 unsigned int test_results(const float* const a,
