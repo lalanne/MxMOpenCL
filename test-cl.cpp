@@ -1,5 +1,3 @@
-// ADI WAS HERE!!!
-#include <time.h>
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -23,7 +21,7 @@
 #define MATRIX_RANK 4
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 
-#define DEVICE CL_DEVICE_TYPE_GPU
+#define DEVICE CL_DEVICE_TYPE_CPU//CL_DEVICE_TYPE_GPU
 
 using namespace std;
 
@@ -31,25 +29,12 @@ const unsigned int SUCCESS = 0;
 
 int show_info(cl_platform_id platform_id);
 int load_file_to_memory(const char *filename, char **result);
-unsigned int test_results(const float* const a,
-                        const float* const b,
+unsigned int test_results(const float* const a, 
+                        const float* const b, 
                         const float* const results);
-
-std::string loadProgram(std::string input)                          
-{
-    std::ifstream stream(input.c_str());
-    if (!stream.is_open()) {
-        std::cout << "Cannot open file: " << input << std::endl;
-        exit(1);
-    }
-
-     return std::string(
-        std::istreambuf_iterator<char>(stream),
-        (std::istreambuf_iterator<char>()));
-}
+std::string loadProgram(std::string input);
 
 int main(int argc, char** argv){
-    // error code returned from api calls
     int err;                            
      
     std::vector<float> a(DATA_SIZE);
@@ -60,7 +45,6 @@ int main(int argc, char** argv){
     cl::CommandQueue queue(context);
 
     cl::Buffer d_a, d_b, d_c;
-   
    
     if (argc != 4){
         printf("%s <inputfile>\n", argv[0]);
@@ -74,7 +58,7 @@ int main(int argc, char** argv){
                                                             argv[1]);
     // Fill our data sets with pattern
     int i;
-    for(i = 0; i < DATA_SIZE; i++) {
+    for(i = 0; i < DATA_SIZE; i++){
         a[i] = (float)i;
         b[i] = (float)i;
         c[i] = 0.0f;
@@ -84,18 +68,22 @@ int main(int argc, char** argv){
     d_b = cl::Buffer(context, b.begin(), b.end(), true);
     d_c = cl::Buffer(context, c.begin(), c.end(), true);
 
-    cl::Program program(context, loadProgram("naive.cl"), true);
+    try{
+        cl::Program program(context, loadProgram("naive.cl"), true);
+        auto naive = cl::make_kernel<float, float, float, cl::Buffer, cl::Buffer, cl::Buffer>(program, "naive");
 
-    auto naive = cl::make_kernel<float, float, float, cl::Buffer, cl::Buffer, cl::Buffer>(program, "naive");
-
-    cl::NDRange global(MATRIX_RANK, MATRIX_RANK);
-    naive(cl::EnqueueArgs(queue, global), MATRIX_RANK, MATRIX_RANK, MATRIX_RANK, d_a, d_b, d_c);
+        cl::NDRange global(MATRIX_RANK, MATRIX_RANK);
+        naive(cl::EnqueueArgs(queue, global), MATRIX_RANK, MATRIX_RANK, MATRIX_RANK, d_a, d_b, d_c);
+    }
+    catch(...){
+        cout<<"Exception!!!"<<endl;
+    }
 
     queue.finish();
+    sleep(3);
 
     cl::copy(queue, d_c, c.begin(), c.end());
     cout<<"here"<<endl;
-
 }
 
 unsigned int test_results(const float* const a,
@@ -162,26 +150,39 @@ int show_info(cl_platform_id platform_id){
     return SUCCESS;
 }
 
-int load_file_to_memory(const char *filename, char **result)
-{ 
-  int size = 0;
-  FILE *f = fopen(filename, "rb");
-  if (f == NULL) 
-  { 
-    *result = NULL;
-    return -1; // -1 means file opening fail 
-  } 
-  fseek(f, 0, SEEK_END);
-  size = ftell(f);
-  fseek(f, 0, SEEK_SET);
-  *result = (char *)malloc(size+1);
-  if (size != fread(*result, sizeof(char), size, f)) 
-  { 
-    free(*result);
-    return -2; // -2 means file reading fail 
-  } 
-  fclose(f);
-  (*result)[size] = 0;
-  return size;
+int load_file_to_memory(const char *filename, char **result){ 
+    int size = 0;
+    FILE *f = fopen(filename, "rb");
+    if (f == NULL){ 
+        *result = NULL;
+        return -1; // -1 means file opening fail 
+    } 
+    fseek(f, 0, SEEK_END);
+    size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    *result = (char *)malloc(size+1);
+    if (size != fread(*result, sizeof(char), size, f)){ 
+        free(*result);
+        return -2; // -2 means file reading fail 
+    }  
+    fclose(f);
+    (*result)[size] = 0;
+  
+    return size;
 }
+
+std::string loadProgram(std::string input){
+    std::ifstream stream(input.c_str());
+    if (!stream.is_open()) {
+        std::cout << "Cannot open file: " << input << std::endl;
+        exit(1);
+    }
+
+    cout<<std::string(std::istreambuf_iterator<char>(stream), (std::istreambuf_iterator<char>()))<<endl;
+
+     return std::string(
+        std::istreambuf_iterator<char>(stream),
+        (std::istreambuf_iterator<char>()));
+}
+
 
