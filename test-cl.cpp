@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <string>
 
 #include "cl.hpp"
 
@@ -12,6 +13,7 @@
 #define DEVICE CL_DEVICE_TYPE_CPU//CL_DEVICE_TYPE_GPU
 
 using namespace std;
+using namespace cl;
 
 const unsigned int SUCCESS = 0;
 
@@ -20,19 +22,19 @@ int load_file_to_memory(const char *filename, char **result);
 unsigned int test_results(const float* const a, 
                         const float* const b, 
                         const float* const results);
-std::string loadProgram(std::string input);
+string loadProgram(string input);
 
 int main(int argc, char** argv){
     int err;                            
      
-    std::vector<float> a(DATA_SIZE);
-    std::vector<float> b(DATA_SIZE);
-    std::vector<float> c(DATA_SIZE);
+    vector<float> a(DATA_SIZE);
+    vector<float> b(DATA_SIZE);
+    vector<float> c(DATA_SIZE);
 
-    cl::Context context(DEVICE);
-    cl::CommandQueue queue(context);
+    Context context(DEVICE);
+    CommandQueue queue(context);
 
-    cl::Buffer d_a, d_b, d_c;
+    Buffer d_a, d_b, d_c;
    
     if (argc != 4){
         printf("%s <inputfile>\n", argv[0]);
@@ -52,16 +54,16 @@ int main(int argc, char** argv){
         c[i] = 0.0f;
     }
 
-    d_a = cl::Buffer(context, a.begin(), a.end(), true);
-    d_b = cl::Buffer(context, b.begin(), b.end(), true);
-    d_c = cl::Buffer(context, c.begin(), c.end(), true);
+    d_a = Buffer(context, a.begin(), a.end(), true);
+    d_b = Buffer(context, b.begin(), b.end(), true);
+    d_c = Buffer(context, c.begin(), c.end(), true);
 
     try{
-        cl::Program program(context, loadProgram("naive.cl"), true);
-        auto naive = cl::make_kernel<float, float, float, cl::Buffer, cl::Buffer, cl::Buffer>(program, "naive");
+        Program program(context, loadProgram("naive.cl"), true);
+        auto naive = make_kernel<float, float, float, Buffer, Buffer, Buffer>(program, "naive");
 
-        cl::NDRange global(MATRIX_RANK, MATRIX_RANK);
-        naive(cl::EnqueueArgs(queue, global), MATRIX_RANK, MATRIX_RANK, MATRIX_RANK, d_a, d_b, d_c);
+        NDRange global(MATRIX_RANK, MATRIX_RANK);
+        naive(EnqueueArgs(queue, global), MATRIX_RANK, MATRIX_RANK, MATRIX_RANK, d_a, d_b, d_c);
     }
     catch(...){
         cout<<"Exception!!!"<<endl;
@@ -70,7 +72,7 @@ int main(int argc, char** argv){
     queue.finish();
     sleep(3);
 
-    cl::copy(queue, d_c, c.begin(), c.end());
+    copy(queue, d_c, c.begin(), c.end());
     cout<<"here"<<endl;
 }
 
@@ -159,18 +161,18 @@ int load_file_to_memory(const char *filename, char **result){
     return size;
 }
 
-std::string loadProgram(std::string input){
-    std::ifstream stream(input.c_str());
+string loadProgram(string input){
+    ifstream stream(input.c_str());
     if (!stream.is_open()) {
-        std::cout << "Cannot open file: " << input << std::endl;
+        cout << "Cannot open file: " << input << endl;
         exit(1);
     }
 
-    cout<<std::string(std::istreambuf_iterator<char>(stream), (std::istreambuf_iterator<char>()))<<endl;
+    cout<<string(istreambuf_iterator<char>(stream), (istreambuf_iterator<char>()))<<endl;
 
-     return std::string(
-        std::istreambuf_iterator<char>(stream),
-        (std::istreambuf_iterator<char>()));
+     return string(
+        istreambuf_iterator<char>(stream),
+        (istreambuf_iterator<char>()));
 }
 
 
