@@ -1,3 +1,5 @@
+#define __CL_ENABLE_EXCEPTIONS
+
 #include <unistd.h>/*sleep*/
 #include <stdlib.h>
 #include <cmath>
@@ -11,7 +13,7 @@
 #define MATRIX_RANK 4
 #define DATA_SIZE MATRIX_RANK*MATRIX_RANK
 
-#define DEVICE CL_DEVICE_TYPE_CPU//CL_DEVICE_TYPE_GPU
+#define DEVICE CL_DEVICE_TYPE_DEFAULT//CL_DEVICE_TYPE_CPU//CL_DEVICE_TYPE_GPU
 
 using namespace std;
 using namespace cl;
@@ -26,48 +28,31 @@ unsigned int test_results(const float* const a,
 string loadProgram(string input);
 
 int main(int argc, char** argv){
-    int err;                            
-     
-    vector<float> a(DATA_SIZE);
-    vector<float> b(DATA_SIZE);
-    vector<float> c(DATA_SIZE);
-
-    Context context(DEVICE);
-    CommandQueue queue(context);
-
-    if (argc != 4){
+    if (argc != 2){
         printf("%s <inputfile>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    const unsigned int wgSize1D = atoi(argv[2]);
-    const unsigned int wgSize2D = atoi(argv[3]);
-    printf("Working Group size 1D[%u] 2D[%u] kernel[%s] \n", wgSize1D, 
-                                                            wgSize2D, 
-                                                            argv[1]);
-    // Fill our data sets with pattern
-    int i;
-    for(i = 0; i < DATA_SIZE; i++){
-        a[i] = (float)i;
-        b[i] = (float)i;
-        c[i] = 0.0f;
-    }
+    vector<float> a(DATA_SIZE, 0.1);
+    vector<float> b(DATA_SIZE, 0.1);
 
-    Buffer d_a(context, begin(a), end(a), true);
-    Buffer d_b(context, begin(b), end(b), true);
+    Context context(DEVICE);
+    Buffer d_a(begin(a), end(a), true, false);
+    Buffer d_b(begin(b), end(b), true, false);
     Buffer d_c(CL_MEM_READ_WRITE, DATA_SIZE * sizeof(float));
     
     string programText = loadProgram("naive.cl");
-    Program program(context, programText, true);
-    auto naive = make_kernel<float, float, float, Buffer, Buffer, Buffer>(program, "naive");
+    Program program(programText, true);
+    try{
+        auto naive = make_kernel<Buffer, Buffer, Buffer>(program, "naive");
+        naive(EnqueueArgs(DATA_SIZE), d_a, d_b, d_c);
+    }
+    catch(Error& e){
+        cout<<"ERROR: exception: "<<e.what()<<endl;
+    }
 
-    NDRange global(MATRIX_RANK, MATRIX_RANK);
-    naive(EnqueueArgs(queue, global), MATRIX_RANK, MATRIX_RANK, MATRIX_RANK, d_a, d_b, d_c);
-
-    queue.finish();
-    sleep(3);
-
-    copy(queue, d_c, begin(c), end(c));
+    vector<float> c(DATA_SIZE);
+    cl::copy(d_c, begin(c), end(c));
     cout<<"here"<<endl;
 }
 
