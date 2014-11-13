@@ -37,30 +37,32 @@ int main(int argc, char** argv){
     vector<float> b(DATA_SIZE, 0.1);
 
     Context context(DEVICE);
-    Buffer d_a(begin(a), end(a), true, false);
-    Buffer d_b(begin(b), end(b), true, false);
-    Buffer d_c(CL_MEM_READ_WRITE, DATA_SIZE * sizeof(float));
+    CommandQueue queue(context);
+
+    Buffer d_a(context, begin(a), end(a), true);
+    Buffer d_b(context, begin(b), end(b), true);
+    Buffer d_c(context, CL_MEM_WRITE_ONLY, DATA_SIZE * sizeof(float));
     
     string programText = loadProgram("naive.cl");
-    Program program(programText, true);
+    Program program(context, programText, true);
     try{
         auto naive = make_kernel<Buffer, Buffer, Buffer>(program, "naive");
-        naive(EnqueueArgs(DATA_SIZE), d_a, d_b, d_c);
+        naive(EnqueueArgs(queue, DATA_SIZE), d_a, d_b, d_c);
+        queue.finish();
     }
     catch(Error& e){
-        cout<<"ERROR: copy exception: "<<e.what()<<endl;
+        cout<<"ERROR: exception: "<<e.what()<<" code: "<<e.err()<<endl;
     }
-
-    sleep(3);
 
     vector<float> c(DATA_SIZE);
     try{
-        cl::copy(d_c, begin(c), end(c));
+        cl::copy(queue, d_c, begin(c), end(c));
     }
     catch(Error& e){
-        cout<<"ERROR: exception: "<<e.what()<<endl;
+        cout<<"ERROR: copy back exception: "<<e.what()<<" code: "<<e.err()<<endl;
     }
-    cout<<"here"<<endl;
+
+    cout<<"end of the program...."<<endl;
 }
 
 unsigned int test_results(const float* const a,
