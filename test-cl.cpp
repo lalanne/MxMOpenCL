@@ -35,8 +35,6 @@ int main(int argc, char** argv){
     Context context(DEVICE);
     CommandQueue queue(context);
 
-    Buffer d_a, d_b, d_c;
-   
     if (argc != 4){
         printf("%s <inputfile>\n", argv[0]);
         return EXIT_FAILURE;
@@ -55,20 +53,16 @@ int main(int argc, char** argv){
         c[i] = 0.0f;
     }
 
-    d_a = Buffer(context, begin(a), end(a), true);
-    d_b = Buffer(context, begin(b), end(b), true);
-    d_c = Buffer(context, begin(c), end(c), true);
+    Buffer d_a(context, begin(a), end(a), true);
+    Buffer d_b(context, begin(b), end(b), true);
+    Buffer d_c(CL_MEM_READ_WRITE, DATA_SIZE * sizeof(float));
+    
+    string programText = loadProgram("naive.cl");
+    Program program(context, programText, true);
+    auto naive = make_kernel<float, float, float, Buffer, Buffer, Buffer>(program, "naive");
 
-    try{
-        Program program(context, loadProgram("naive.cl"), true);
-        auto naive = make_kernel<float, float, float, Buffer, Buffer, Buffer>(program, "naive");
-
-        NDRange global(MATRIX_RANK, MATRIX_RANK);
-        naive(EnqueueArgs(queue, global), MATRIX_RANK, MATRIX_RANK, MATRIX_RANK, d_a, d_b, d_c);
-    }
-    catch(...){
-        cout<<"Exception!!!"<<endl;
-    }
+    NDRange global(MATRIX_RANK, MATRIX_RANK);
+    naive(EnqueueArgs(queue, global), MATRIX_RANK, MATRIX_RANK, MATRIX_RANK, d_a, d_b, d_c);
 
     queue.finish();
     sleep(3);
@@ -168,10 +162,7 @@ string loadProgram(string input){
         cout << "Cannot open file: " << input << endl;
         exit(1);
     }
-
-    cout<<string(istreambuf_iterator<char>(stream), (istreambuf_iterator<char>()))<<endl;
-
-     return string(
+    return string(
         istreambuf_iterator<char>(stream),
         (istreambuf_iterator<char>()));
 }
