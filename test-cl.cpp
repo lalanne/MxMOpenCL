@@ -22,7 +22,7 @@ using namespace cl;
 const unsigned int SUCCESS = 0;
 
 vector<float> mxm_host(const vector<float>& a, const vector<float>&b);
-bool isEqual(const float x, const float y);
+bool is_equal(const float x, const float y);
 bool test_results(const vector<float>& a, 
                 const vector<float>& b, 
                 const vector<float>& results);
@@ -93,14 +93,14 @@ bool test_results(const vector<float>& a,
     vector<float> swResults = mxm_host(a, b);
 
     for(unsigned int i = 0; i < DATA_SIZE; ++i){
-        if(isEqual(swResults[i], results[i])) ++correct;
+        if(is_equal(swResults[i], results[i])) ++correct;
     }
     cout<<"Computed '"<<correct<<"/"<<DATA_SIZE<<"' correct values!"<<endl;
     if(correct == DATA_SIZE) return true;
     return false;
 }
 
-bool isEqual(const float x, const float y){
+bool is_equal(const float x, const float y){
     const float epsilon = 1E-32;
     return abs(x - y) <= epsilon;
 }
