@@ -33,8 +33,8 @@ int main(int argc, char** argv){
     if (argc != 2) { cout<<argv[0]<<" <inputfile>"<<endl; return EXIT_FAILURE; }
     else kernel_name = argv[1];
 
-    vector<float> a(DATA_SIZE, 0.1);
-    vector<float> b(DATA_SIZE, 0.1);
+    vector<float> a(DATA_SIZE, 1.0);
+    vector<float> b(DATA_SIZE, 1.0);
 
     Context context(DEVICE);
     CommandQueue queue(context);
@@ -47,7 +47,8 @@ int main(int argc, char** argv){
     try{
         Program program(context, programText, true);
         auto naive = make_kernel<Buffer, Buffer, Buffer>(program, "naive");
-        naive(EnqueueArgs(queue, /*DATA_SIZE*/1), d_a, d_b, d_c);
+        NDRange global(2, 2);
+        naive(EnqueueArgs(queue, global), d_a, d_b, d_c);
         queue.finish();
     }
     catch(Error& e){
