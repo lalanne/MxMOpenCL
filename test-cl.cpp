@@ -22,7 +22,6 @@ using namespace cl;
 const unsigned int SUCCESS = 0;
 
 int show_info(cl_platform_id platform_id);
-int load_file_to_memory(const char *filename, char **result);
 unsigned int test_results(const float* const a, 
                         const float* const b, 
                         const float* const results);
@@ -47,7 +46,7 @@ int main(int argc, char** argv){
     try{
         Program program(context, programText, true);
         auto naive = make_kernel<Buffer, Buffer, Buffer>(program, "naive");
-        NDRange global(2, 2);
+        NDRange global(MATRIX_RANK, MATRIX_RANK);
         naive(EnqueueArgs(queue, global), d_a, d_b, d_c);
         queue.finish();
     }
@@ -132,27 +131,6 @@ int show_info(cl_platform_id platform_id){
     printf("CL_PLATFORM_VERSION %s\n",cl_platform_version);
 
     return SUCCESS;
-}
-
-int load_file_to_memory(const char *filename, char **result){ 
-    int size = 0;
-    FILE *f = fopen(filename, "rb");
-    if (f == NULL){ 
-        *result = NULL;
-        return -1; // -1 means file opening fail 
-    } 
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    *result = (char *)malloc(size+1);
-    if (size != fread(*result, sizeof(char), size, f)){ 
-        free(*result);
-        return -2; // -2 means file reading fail 
-    }  
-    fclose(f);
-    (*result)[size] = 0;
-  
-    return size;
 }
 
 string loadProgram(string input){
