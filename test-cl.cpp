@@ -25,7 +25,7 @@ int show_info(cl_platform_id platform_id);
 unsigned int test_results(const float* const a, 
                         const float* const b, 
                         const float* const results);
-string loadProgram(string input);
+string load_program(string input);
 
 int main(int argc, char** argv){
     string kernel_name;
@@ -42,7 +42,7 @@ int main(int argc, char** argv){
     Buffer d_b(context, begin(b), end(b), true);
     Buffer d_c(context, CL_MEM_WRITE_ONLY, DATA_SIZE * sizeof(float));
     
-    string programText = loadProgram(kernel_name);
+    string programText = load_program(kernel_name);
     try{
         Program program(context, programText, true);
         auto naive = make_kernel<Buffer, Buffer, Buffer>(program, "naive");
@@ -133,15 +133,13 @@ int show_info(cl_platform_id platform_id){
     return SUCCESS;
 }
 
-string loadProgram(string input){
+string load_program(string input){
     ifstream stream(input.c_str());
     if (!stream.is_open()) {
         cout << "Cannot open file: " << input << endl;
         exit(1);
     }
-    return string(
-        istreambuf_iterator<char>(stream),
-        (istreambuf_iterator<char>()));
+    return string(istreambuf_iterator<char>(stream), (istreambuf_iterator<char>()));
 }
 
 
