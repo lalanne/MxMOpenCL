@@ -21,10 +21,11 @@ using namespace cl;
 
 const unsigned int SUCCESS = 0;
 
-int show_info(cl_platform_id platform_id);
-unsigned int test_results(const float* const a, 
-                        const float* const b, 
-                        const float* const results);
+vector<float> mxm_host(const vector<float>& a, const vector<float>&b);
+bool isEqual(const float x, const float y);
+bool test_results(const vector<float>& a, 
+                const vector<float>& b, 
+                const vector<float>& results);
 string load_program(string input);
 
 int main(int argc, char** argv){
@@ -64,73 +65,44 @@ int main(int argc, char** argv){
         return EXIT_FAILURE;
     }
 
-    std::copy(begin(c), end(c), ostream_iterator<float>(cout, ", "));
-    cout<<endl<<endl;
-    return SUCCESS;
+    if(test_results(a, b, c)) return SUCCESS;
+    return EXIT_FAILURE;
 }
 
-unsigned int test_results(const float* const a,
-                        const float* const b,
-                        const float* const results){
-    unsigned int correct = 0;
-    float sw_results[DATA_SIZE];          // results returned from device
-
-    unsigned int i;
-    for(i = 0; i < DATA_SIZE; i++){
-        int row = i/MATRIX_RANK;
-        int col = i%MATRIX_RANK;
+vector<float> mxm_host(const vector<float>& a, const vector<float>&b){
+    vector<float> swResults(DATA_SIZE);
+    for(unsigned int i = 0; i < DATA_SIZE; i++){
+        unsigned int row = i/MATRIX_RANK;
+        unsigned int col = i%MATRIX_RANK;
         float running = 0.0f;
 
-        int index;
-        for (index=0;index<MATRIX_RANK;index++){
-            int aIndex = row*MATRIX_RANK + index;
-            int bIndex = col + index*MATRIX_RANK;
+        for (unsigned int index=0;index<MATRIX_RANK;index++){
+            unsigned int aIndex = row*MATRIX_RANK + index;
+            unsigned int bIndex = col + index*MATRIX_RANK;
             running += a[aIndex] * b[bIndex];
         }
-        sw_results[i] = running;
+        swResults[i] = running;
     }
+    return swResults;
+} 
 
-    for (i = 0;i < DATA_SIZE; i++) {
-        if(abs(results[i] - sw_results[i]) < 1E-32){
-            correct++;
-        }
+bool test_results(const vector<float>& a,
+                        const vector<float>& b,
+                        const vector<float>& results){
+    unsigned int correct = 0;
+    vector<float> swResults = mxm_host(a, b);
+
+    for(unsigned int i = 0; i < DATA_SIZE; ++i){
+        if(isEqual(swResults[i], results[i])) ++correct;
     }
-
-    printf("Computed '%d/%d' correct values!\n", correct, DATA_SIZE);
-    return correct;
+    cout<<"Computed '"<<correct<<"/"<<DATA_SIZE<<"' correct values!"<<endl;
+    if(correct == DATA_SIZE) return true;
+    return false;
 }
 
-int show_info(cl_platform_id platform_id){
-    int err;
-    char cl_platform_vendor[1001];
-    char cl_platform_name[1001];
-    char cl_platform_version[1001];
-
-    err = clGetPlatformInfo(platform_id,CL_PLATFORM_VENDOR,1000,(void *)cl_platform_vendor,NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: clGetPlatformInfo(CL_PLATFORM_VENDOR) failed!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-    printf("CL_PLATFORM_VENDOR %s\n",cl_platform_vendor);
-  
-    err = clGetPlatformInfo(platform_id,CL_PLATFORM_NAME,1000,(void *)cl_platform_name,NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: clGetPlatformInfo(CL_PLATFORM_NAME) failed!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-    printf("CL_PLATFORM_NAME %s\n",cl_platform_name);
-    
-    err = clGetPlatformInfo(platform_id,CL_PLATFORM_VERSION,1000,(void *)cl_platform_version,NULL);
-    if (err != CL_SUCCESS){
-        printf("Error: clGetPlatformInfo(CL_PLATFORM_VERSION) failed!\n");
-        printf("Test failed\n");
-        return EXIT_FAILURE;
-    }
-    printf("CL_PLATFORM_VERSION %s\n",cl_platform_version);
-
-    return SUCCESS;
+bool isEqual(const float x, const float y){
+    const float epsilon = 1E-32;
+    return abs(x - y) <= epsilon;
 }
 
 string load_program(string input){
