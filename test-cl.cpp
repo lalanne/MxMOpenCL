@@ -11,9 +11,9 @@
 
 #include "cl_noGL_lalanne.hpp"
 
-const unsigned int MATRIX_RANK = 2;
+const unsigned int MATRIX_RANK = 4096;
 const unsigned int DATA_SIZE = MATRIX_RANK*MATRIX_RANK;
-const float INITIAL_VALUE = 0.1;
+const float INITIAL_VALUE = 0.0001f;
 
 #define DEVICE CL_DEVICE_TYPE_DEFAULT//CL_DEVICE_TYPE_CPU//CL_DEVICE_TYPE_GPU
 
@@ -102,7 +102,7 @@ bool test_results(const vector<float>& a,
 }
 
 bool is_equal(const float x, const float y){
-    const float epsilon = 1E-32;
+    const float epsilon = 1E-8f;
     return abs(x - y) <= epsilon;
 }
 
