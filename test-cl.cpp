@@ -13,6 +13,7 @@
 
 const unsigned int MATRIX_RANK = 2;
 const unsigned int DATA_SIZE = MATRIX_RANK*MATRIX_RANK;
+const float INITIAL_VALUE = 0.1;
 
 #define DEVICE CL_DEVICE_TYPE_DEFAULT//CL_DEVICE_TYPE_CPU//CL_DEVICE_TYPE_GPU
 
@@ -33,8 +34,8 @@ int main(int argc, char** argv){
     if (argc != 2) { cout<<argv[0]<<" <inputfile>"<<endl; return EXIT_FAILURE; }
     else kernel_name = argv[1];
 
-    vector<float> a(DATA_SIZE, 1.0);
-    vector<float> b(DATA_SIZE, 1.0);
+    vector<float> a(DATA_SIZE, INITIAL_VALUE);
+    vector<float> b(DATA_SIZE, INITIAL_VALUE);
 
     Context context(DEVICE);
     CommandQueue queue(context);
